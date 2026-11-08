@@ -327,9 +327,13 @@ def generate_video_and_extract_trace(
         "-i",
         "pipe:0",
         "-c:v",
-        "mpeg4",
-        "-q:v",
-        "2",
+        "libx264",
+        "-pix_fmt",
+        "yuv420p",
+        "-preset",
+        "fast",
+        "-crf",
+        "22",
         str(mp4_path),
     ]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)

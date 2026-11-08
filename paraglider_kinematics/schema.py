@@ -127,3 +127,29 @@ class ManeuverKinematicsTrace:
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(json.dumps(self.to_dict(), indent=2), encoding="utf-8")
         return out
+
+    @classmethod
+    def from_dict(cls, d: Dict) -> ManeuverKinematicsTrace:
+        wing = WingGeometrySpec(**d.get("wing", {}))
+        pm = PhaseLagMetrics(**d.get("phase_metrics", {}))
+        events = [CommandTimingEvent(**e) for e in d.get("events", [])]
+        frames = [FrameObservation(**f) for f in d.get("frames", [])]
+        return cls(
+            schema_version=d.get("schema_version", "1.0.0"),
+            source_video_url=d.get("source_video_url", ""),
+            source_video_title=d.get("source_video_title", ""),
+            maneuver_id=d.get("maneuver_id", ""),
+            maneuver_name=d.get("maneuver_name", ""),
+            video_timestamp_range=d.get("video_timestamp_range", ""),
+            fps=float(d.get("fps", 30.0)),
+            wing=wing,
+            phase_metrics=pm,
+            events=events,
+            frames=frames,
+            camera_mode=d.get("camera_mode", "side_chase"),
+        )
+
+    @classmethod
+    def load_json(cls, path: str | Path) -> ManeuverKinematicsTrace:
+        content = Path(path).read_text(encoding="utf-8")
+        return cls.from_dict(json.loads(content))

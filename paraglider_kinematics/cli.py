@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Dict
 
 from .physics_replay import ParagliderPhysicsComparator
-from .schema import WingGeometrySpec
+from .schema import ManeuverKinematicsTrace, WingGeometrySpec
 from .theo_de_blic_dataset import (
     generate_video_and_extract_trace,
     render_cv_overlay_keyframe_png,
@@ -237,7 +237,10 @@ def run_theo_pitch_suite(repo_root: Path) -> Dict:
     report_path.write_text(json.dumps(full_report, indent=2), encoding="utf-8")
     full_path = diag_dir / "full_tutorial_residual_report.json"
     full_path.write_text(json.dumps(full_report, indent=2), encoding="utf-8")
+    from .inspector import build_and_export_inspector
+    html_path = build_and_export_inspector(repo_root)
     print(f"\n[OK] Saved full 7-maneuver residual report to {full_path}")
+    print(f"[OK] Generated Interactive Flight Inspector with Synchronized Video: {html_path}")
     return full_report
 
 
@@ -262,8 +265,43 @@ def main() -> None:
         default="data/traces/custom_trace.json",
         help="Output JSON trace path when --video is provided.",
     )
+    parser.add_argument(
+        "--export-video",
+        type=str,
+        default=None,
+        help="Export annotated MP4 video with burnt-in CV detection geometry and HUD (pass maneuver key e.g. pitch_pendulum_active_catch or 'all').",
+    )
+    parser.add_argument(
+        "--inspector",
+        action="store_true",
+        help="Build/refresh the standalone HTML interactive flight telemetry inspector dashboard.",
+    )
     args = parser.parse_args()
     repo_root = Path(__file__).resolve().parent.parent
+
+    if args.inspector:
+        from .inspector import build_and_export_inspector
+        html_path = build_and_export_inspector(repo_root)
+        print(f"[OK] Interactive Flight Inspector ready at: {html_path}")
+        return
+
+    if args.export_video:
+        from .video_annotator import export_annotated_mp4
+        traces_dir = repo_root / "data" / "traces"
+        videos_dir = repo_root / "videos"
+        videos_dir.mkdir(parents=True, exist_ok=True)
+        keys = [s[0] for s in SUITE_SPECS] if args.export_video == "all" else [args.export_video]
+        for k in keys:
+            t_path = traces_dir / f"{k}.json"
+            if not t_path.exists():
+                print(f"[ERROR] Trace not found: {t_path}")
+                continue
+            trace = ManeuverKinematicsTrace.load_json(t_path)
+            mp4_out = videos_dir / f"{k}_annotated.mp4"
+            print(f"Exporting annotated video for '{k}' ({len(trace.frames)} frames)...")
+            export_annotated_mp4(trace, mp4_out)
+            print(f"[OK] Exported: {mp4_out} ({mp4_out.stat().st_size / 1024:.1f} KB)")
+        return
 
     if args.video:
         tracker = DualViewParagliderTracker()
@@ -279,6 +317,9 @@ def main() -> None:
         )
         out_path = trace.save_json(args.out)
         print(f"[OK] Extracted {len(trace.frames)} frames -> {out_path}")
+        from .inspector import build_and_export_inspector
+        html_path = build_and_export_inspector(repo_root, custom_trace=trace, custom_video_path=args.video)
+        print(f"[OK] Generated Interactive Flight Inspector for custom video: {html_path}")
         return
 
     run_theo_pitch_suite(repo_root)
