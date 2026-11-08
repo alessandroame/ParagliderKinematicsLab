@@ -5,7 +5,7 @@
 - **Riferimento Volo**: Tutorial Acro/SIV di Theo de Blic su parapendio NOVA Mentor 7 Light S (70-95 kg, fascio 7.10 m).
 - **Core Modules**:
   - `paraglider_kinematics.vision_tracker`: tracciatore CV robusto per centroide calotta/pilota, asse pendolare gravitazionale (Sobel), mani pilota su carrucole.
-  - `paraglider_kinematics.physics_replay`: comparatore residui First-Principles a due corpi (braccio aerodinamico 0.25c, accoppiamento surge-incidenza, diedro alare reale).
+  - `paraglider_kinematics.physics_replay`: comparatore residui First-Principles mediante integrazione ODE stato-spazio a due corpi a 500 Hz guidata dai soli comandi `u(t)` (zero forzanti euristiche di picchiata o coordinazione).
   - `paraglider_kinematics.inspector`: costruttore automatico bundle diagnostico (`inspector_bundle.json`) e app SPA interattiva (`paraglider_flight_inspector.html`).
   - `paraglider_kinematics.video_annotator`: esportatore video MP4 con telemetria e overlay geometrico impressi a fuoco.
   - `paraglider_kinematics.cli`: interfaccia CLI unificata per suite tutorial, analisi video esterni (`--video`), esportazione video (`--export-video`) e inspector (`--inspector`).

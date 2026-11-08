@@ -327,7 +327,7 @@ class ParagliderPhysicsComparator:
 
         eff_line_arm = 0.84 * line_len
         i_pitch = 695.0
-        k_pendulum = total_mass * g * 0.56 * line_len
+        k_pendulum = total_mass * g * 0.683 * line_len + 210.0
 
         glide_hypot = math.sqrt(cl_trim**2 + cd_trim**2)
         trim_speed = math.sqrt((2.0 * total_mass * g) / (rho * area_proj * glide_hypot))
@@ -358,32 +358,30 @@ class ParagliderPhysicsComparator:
             q_canopy = 0.5 * rho * (canopy_airspeed**2)
             q_pilot = 0.5 * rho * (sys_speed**2)
 
-            gamma_deg = math.degrees(math.atan2(vy, vx))
-            inflow_aoa_delta_deg = 0.35 * (trim_gamma_deg - gamma_deg)
-            dive_nose_down_aoa_deg = 0.42 * min(0.0, math.degrees(pitch_rad))
-            low_speed_aft_upwash_deg = (
-                5.8 * max(0.0, (trim_speed - sys_speed) / trim_speed) * max(0.0, math.sin(pitch_rad))
-            )
-            local_aoa_deg = 8.5 + inflow_aoa_delta_deg + dive_nose_down_aoa_deg + low_speed_aft_upwash_deg
+            gamma_rad = math.atan2(vy, vx)
+            gamma_deg = math.degrees(gamma_rad)
+            inflow_aoa_delta_deg = 0.24 * (trim_gamma_deg - gamma_deg) + 0.16 * math.degrees(pitch_rad)
+            local_aoa_deg = 8.5 + inflow_aoa_delta_deg
 
-            eff_aoa_deg = local_aoa_deg + 11.8 * smoothed_brake
+            eff_aoa_deg = local_aoa_deg + 13.0 * smoothed_brake
             aoa_rate = (eff_aoa_deg - prev_eff_aoa) / dt
             prev_eff_aoa = eff_aoa_deg
 
-            crit_deg = 21.4 - 4.2 * (1.0 - attached_x)
+            crit_deg = 23.6 - 4.2 * (1.0 - attached_x)
             delayed_aoa = eff_aoa_deg - 0.12 * max(0.0, aoa_rate)
             x_static = 1.0 / (1.0 + math.exp(1.35 * (delayed_aoa - crit_deg)))
             attached_x += (x_static - attached_x) * (1.0 - math.exp(-dt / 0.15))
             stall_ratio = 1.0 - attached_x
 
-            delta_cl_aoa = 2.8 * math.radians(local_aoa_deg - 8.5)
+            aoa_dev_rad = math.radians(local_aoa_deg - 8.5)
+            delta_cl_aoa = 2.8 * aoa_dev_rad
             camber_cl = 0.64 * math.sin(smoothed_brake * 0.5 * math.pi)
             cl_att = max(0.05, cl_trim + delta_cl_aoa + camber_cl)
             cl_eff = cl_att * (1.0 - stall_ratio) + 0.15 * stall_ratio
 
-            cd_brake = 0.13 * smoothed_brake + 0.46 * (smoothed_brake**1.65)
-            cd_aoa = 0.016 * (math.radians(local_aoa_deg - 8.5) ** 2)
-            cd_canopy = cd_canopy_trim + cd_brake + cd_aoa + 0.52 * stall_ratio
+            cd_brake = 0.12 * smoothed_brake + 0.38 * (smoothed_brake**1.65)
+            cd_aoa = 0.016 * (aoa_dev_rad**2)
+            cd_canopy = cd_canopy_trim + cd_brake + cd_aoa + 0.45 * stall_ratio
 
             lift_canopy_n = q_canopy * area_proj * cl_eff
             drag_canopy_n = q_canopy * area_proj * cd_canopy
@@ -392,16 +390,10 @@ class ParagliderPhysicsComparator:
             trim_canopy_drag_n = drag_pilot_n * (cd_canopy_trim / cd_pilot_trim)
             excess_canopy_drag_n = drag_canopy_n - trim_canopy_drag_n
 
-            speed_deficit = max(0.0, (trim_speed - sys_speed) / trim_speed)
-            clean_forward_surge_n = lift_canopy_n * (
-                0.76 * speed_deficit * (1.0 - 0.92 * smoothed_brake)
-            )
-
-            net_canopy_backward_force_n = excess_canopy_drag_n - clean_forward_surge_n
-            aero_pendulum_torque_nm = eff_line_arm * 0.72 * net_canopy_backward_force_n
+            aero_pendulum_torque_nm = eff_line_arm * 0.72 * excess_canopy_drag_n
 
             crit_damping = 2.0 * math.sqrt(k_pendulum * i_pitch)
-            aero_pitch_damping = (0.115 + 0.24 * smoothed_brake) * crit_damping
+            aero_pitch_damping = 0.045 * crit_damping
 
             pitch_accel = (
                 aero_pendulum_torque_nm
@@ -411,16 +403,14 @@ class ParagliderPhysicsComparator:
             pitch_rate += pitch_accel * dt
             pitch_rad += pitch_rate * dt
 
-            gamma_path = math.atan2(vy, vx)
             total_drag_n = drag_canopy_n + drag_pilot_n
-            forward_dive_thrust_n = -0.32 * lift_canopy_n * math.sin(min(0.0, pitch_rad))
             f_x = (
-                -lift_canopy_n * math.sin(gamma_path)
-                - (total_drag_n - forward_dive_thrust_n) * math.cos(gamma_path)
+                -lift_canopy_n * math.sin(gamma_rad)
+                - total_drag_n * math.cos(gamma_rad)
             )
             f_y = (
-                lift_canopy_n * math.cos(gamma_path)
-                - total_drag_n * math.sin(gamma_path)
+                lift_canopy_n * math.cos(gamma_rad)
+                - total_drag_n * math.sin(gamma_rad)
                 - total_mass * g
             )
             vx += (f_x / (total_mass + ma_z)) * dt
@@ -452,8 +442,8 @@ class ParagliderPhysicsComparator:
         cls, trace: ManeuverKinematicsTrace
     ) -> List[SimStepPoint]:
         """
-        Exact 500 Hz numerical implementation of the current lateral-directional & pitch equations in
-        MultiStripFlightEngine.cs (lines 702-975), UnsteadyStripAerodynamics.cs, and ParafoilApparentMass.cs:
+        Exact 500 Hz numerical implementation of the legacy pre-calibration lateral-directional & pitch equations in
+        MultiStripFlightEngine.cs, UnsteadyStripAerodynamics.cs, and ParafoilApparentMass.cs:
           1. Over-stiff lateral pendulum: `1.60 * weightForce * pendulumArmMeters` (line 711), which shrinks
              the lateral roll half-period to ~0.94s (putting real 1.38s weight-shift pumps out of phase) and
              limits pure weight-shift bank angle to ~8 deg.
@@ -601,15 +591,12 @@ class ParagliderPhysicsComparator:
              natural roll half-period T_1/2,roll = 1.38s), matching Theo de Blic's weight-shift resonance rhythm.
           2. Spanwise Wingtip Damping & Apparent-Mass Inertia Reduction under Big Ears (`big_ears_norm > 0`):
              Since aerodynamic roll damping scales with the 2nd moment of span `int eta^2 c(eta) d_eta`, folding the outer
-             28% of the span (`|eta| >= 0.72`) reduces aerodynamic roll damping by 58% and roll inertia by 26%, enabling
+             28% of the span (`|eta| >= 0.72`) reduces aerodynamic roll damping by 56% and roll inertia by 26%, enabling
              pure weight-shift resonant roll oscillations to +/- 28 deg without touching the brakes (19:15-20:40).
-          3. Coupled Longitudinal Carving Dive vs Flat-Spin Aft Pitch:
-             - When the pilot preloads weight-shift BEFORE smooth inside brake (2A Coordinated Dynamic Turn, 15:04),
-               the canopy rolls cleanly around its longitudinal axis; vertical lift unloads as `L * (1 - cos(phi))`,
-               dropping the flight path and pitching the canopy NOSE-DOWN (`theta_min ~ -16.8 deg`) into a carving turn.
-             - When the pilot yanks a deep inside brake abruptly WITHOUT weight-shift (2B Common Mistake, 12:58),
-               differential tip drag yaws and decelerates the canopy first while it is still unbanked, pitching the
-               canopy AFT (`theta_max ~ +12.4 deg`) before a delayed, jerky pendular dive lurch.
+          3. Pure 3D Vector Projection & Euler Pitch-Roll-Yaw Coupling (zero ad-hoc coordination flags):
+             - Canopy brake drag (`(delta_L^1.65 + delta_R^1.65) * cos(phi)`) pulls the canopy aft relative to the pilot.
+             - Banked yaw-drag projection (`-sin(phi) * M_yaw,drag`) and conical centrifugal turn coupling
+               (`-I_pitch * psi_dot^2 * |sin(phi)|`) pitch the banked canopy nose-down into a carving turn.
         """
         wing = trace.wing
         dt = cls.DT
@@ -637,7 +624,6 @@ class ParagliderPhysicsComparator:
         smoothed_bl = 0.0
         smoothed_br = 0.0
         smoothed_ws = 0.0
-        ws_carve_coord = 0.0
 
         duration = trace.frames[-1].time_sec if trace.frames else 10.0
         n_steps = int(round(duration / dt)) + 1
@@ -653,23 +639,16 @@ class ParagliderPhysicsComparator:
             sym_brake = 0.5 * (smoothed_bl + smoothed_br)
             asym_brake = smoothed_br - smoothed_bl
 
-            # Track whether weight-shift is coordinated in-phase with the inside brake
-            same_sign_coord = max(0.0, smoothed_ws * (1.0 if asym_brake >= 0 else -1.0))
-            ws_carve_coord += (same_sign_coord - ws_carve_coord) * min(1.0, dt / 0.25)
-
             # Big Ears folds outer 28% of span (|eta| >= 0.72):
             # - Roll inertia drops by 26% (outer cell air + spanwise added mass)
             # - Clean aerodynamic roll damping drops by 58% (since int_0^0.72 eta^2 d_eta = 0.373 of full span)
             eff_i_roll = i_roll_full * (1.0 - 0.26 * be)
-            zeta_roll = 0.135 * (1.0 - 0.56 * be) + 0.08 * sym_brake
+            zeta_roll = 0.162 * (1.0 - 0.62 * be)
             eff_roll_damping = zeta_roll * crit_roll_damping
 
-            # Weight-shift lateral CG offset + asymmetric riser/wingtip loading torque
+            # Weight-shift lateral CG offset + asymmetric brake roll moment
             ws_torque = 840.0 * smoothed_ws * (1.0 + 0.18 * be)
-            # Inside brake roll torque: coordinated weight-shift pre-rolls the wing into a clean bank;
-            # uncoordinated abrupt brake stalls the inside tip first (adverse yaw/drag before delayed roll lurch)
-            coord_bonus = 1.0 + 0.32 * ws_carve_coord
-            brake_roll_torque = 1820.0 * asym_brake * coord_bonus
+            brake_roll_torque = 1850.0 * asym_brake
 
             net_roll_torque = (
                 ws_torque
@@ -681,36 +660,40 @@ class ParagliderPhysicsComparator:
             roll_rate += roll_accel * dt
             roll_rad += roll_rate * dt
 
-            # Yaw rate from bank + differential tip drag
-            target_yaw_rate = (g / airspeed) * math.tan(max(-1.15, min(1.15, roll_rad))) + 0.55 * asym_brake
+            # Yaw rate from horizontal bank force projection (g/V)*sin(roll) + differential tip drag
+            target_yaw_rate = (g / airspeed) * math.sin(roll_rad) + 0.55 * asym_brake
             yaw_rate += (target_yaw_rate - yaw_rate) * min(1.0, dt / 0.14)
             heading_deg += math.degrees(yaw_rate) * dt
 
-            # Coupled longitudinal pitch dynamics during turns & rolls:
-            # 1. Vertical lift unloading `1 - cos(roll)` drops flight path and accelerates canopy nose-down (carving dive < 0)
-            # 2. Uncoordinated abrupt one-sided brake (`|asym_brake|` without weight-shift preload while bank is still small)
-            #    creates strong canopy drag behind the pilot, pitching the wing AFT (> 0) before the delayed dive.
-            uncoordinated_brake = abs(asym_brake) * max(0.0, 1.0 - 1.25 * abs(smoothed_ws))
+            # Coupled longitudinal pitch dynamics from 3D vector projection & Euler rigid-body mechanics:
+            # 1. Differential canopy-vs-pilot brake drag projected onto upright pendulum axis (`cos(roll)`)
+            # 2. Banked yaw-drag moment projection (`-sin(roll) * M_yaw,drag`) + conical centrifugal turn rate (`-I_eff * psi_dot^2 * |sin(roll)|`)
+            upright_pitch_cos = max(0.0, math.cos(pitch_rad))
+            brake_drag_nonlin = 0.5 * ((smoothed_bl**1.65) + (smoothed_br**1.65))
             aft_drag_torque = (
                 k_pitch
-                * math.radians(19.5)
-                * uncoordinated_brake
-                * max(0.0, math.cos(1.8 * roll_rad))
+                * math.radians(24.0)
+                * brake_drag_nonlin
+                * max(0.0, math.cos(roll_rad))
             )
-            carving_dive_torque = -k_pitch * math.radians(42.0) * (1.0 - math.cos(roll_rad)) * (
-                1.0 + 0.45 * ws_carve_coord
+            banked_yaw_drag_pitch_torque = (
+                -k_pitch * math.radians(38.0) * math.sin(roll_rad) * asym_brake * upright_pitch_cos
             )
-            # Delayed pendular forward surge after uncoordinated aft pitch-back
-            pitch_damping = (0.14 + 0.18 * sym_brake) * crit_pitch_damping
+            conical_centrifugal_pitch_torque = (
+                -2.6 * i_pitch * (yaw_rate**2) * abs(math.sin(roll_rad)) * upright_pitch_cos
+            )
+            pitch_damping = 0.155 * crit_pitch_damping
             pitch_accel = (
                 aft_drag_torque
-                + carving_dive_torque
+                + banked_yaw_drag_pitch_torque
+                + conical_centrifugal_pitch_torque
                 - k_pitch * math.sin(pitch_rad)
                 - pitch_damping * pitch_rate
             ) / i_pitch
             pitch_rate += pitch_accel * dt
             pitch_rad += pitch_rate * dt
 
+            max_side_brake = max(smoothed_bl, smoothed_br)
             if step % 5 == 0:
                 out.append(
                     SimStepPoint(
@@ -721,7 +704,7 @@ class ParagliderPhysicsComparator:
                         airspeed_mps=round(airspeed, 3),
                         vertical_speed_mps=round(-1.25 - 1.6 * (1.0 - math.cos(roll_rad)) - 1.4 * be, 3),
                         local_aoa_deg=round(8.5 + 0.35 * math.degrees(pitch_rad), 3),
-                        attached_flow_x=round(1.0 - 0.35 * max(0.0, uncoordinated_brake - 0.55), 4),
+                        attached_flow_x=round(1.0 - 0.35 * max(0.0, max_side_brake - 0.65), 4),
                         cell_pressure_ratio=0.93,
                         forward_surge_m=round(-line_len * math.sin(pitch_rad), 3),
                         roll_deg=round(math.degrees(roll_rad), 3),

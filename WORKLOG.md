@@ -1,5 +1,12 @@
 # WORKLOG.md — ParagliderKinematicsLab
 
+## [2026-11-08] - Rimozione Forzanti Euristiche (`R6`) in `physics_replay.py` e Rigenerazione Tracce ODE
+- **Autore**: Alessandro Ame + Antigravity Agent
+- **Obiettivo**: Eliminare tutte le forzanti ad-hoc (`dive_nose_down_aoa_deg`, `low_speed_aft_upwash_deg`, `clean_forward_surge_n`, `forward_dive_thrust_n`, `ws_carve_coord`, `coord_bonus`, `uncoordinated_brake`) sostituendole con l'integrazione ODE stato-spazio a 2 corpi guidata dai soli input pilota `u(t)`.
+- **Attività svolte**:
+  1. Rimosso ogni termine euristico `R6` da `paraglider_kinematics/physics_replay.py`.
+  2. Rigenerate le 7 tracce `data/traces/*.json` e verificata la suite `python3 -m unittest discover -s tests -v` (`2/2` test `OK`).
+
 ## [2026-11-08] - Web Flight Inspector, Playback Sincronizzato Video Originale e Automazione Pipeline
 - **Autore**: Alessandro Ame + Antigravity Agent
 - **Obiettivo**: Fornire output interattivo per valutare la qualità del lavoro (eventi e dati fisici in playback) con sincronizzazione del video originale e generazione automatica in ogni analisi.
