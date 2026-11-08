@@ -212,14 +212,80 @@ def render_dual_view_frame_rgb(
     draw.line([(riser_rx, 0.08 * height), (riser_rx, y_carabiner)], fill=(90, 105, 120), width=4)
 
     draw.line(
-        [(onboard_x0 + 15, y_pulley), (width - 15, y_pulley)], fill=(90, 190, 120), width=1
+        [(onboard_x0 + 15, y_pulley), (width - 15, y_pulley)], fill=(75, 135, 110), width=1
     )
     draw.line(
-        [(onboard_x0 + 15, y_carabiner), (width - 15, y_carabiner)], fill=(210, 95, 95), width=1
+        [(onboard_x0 + 15, y_carabiner), (width - 15, y_carabiner)], fill=(145, 80, 85), width=1
     )
 
     hand_ly = y_pulley + brake_l * travel_px
     hand_ry = y_pulley + brake_r * travel_px
+
+    # Full articulated pilot geometry in Onboard POV
+    sh_cx = onboard_x0 + (0.5 + 0.22 * weight_shift) * onboard_w
+    sh_cy = 0.60 * height
+    sh_hw = 0.16 * onboard_w
+    sh_roll_rad = math.radians(12.0 * weight_shift + 3.0 * (brake_r - brake_l))
+    l_sh = (sh_cx - sh_hw * math.cos(sh_roll_rad), sh_cy - sh_hw * math.sin(sh_roll_rad))
+    r_sh = (sh_cx + sh_hw * math.cos(sh_roll_rad), sh_cy + sh_hw * math.sin(sh_roll_rad))
+
+    hip_cx = onboard_x0 + (0.5 + 0.14 * weight_shift) * onboard_w
+    hip_cy = 0.82 * height
+    hip_hw = 0.11 * onboard_w
+    hip_roll_rad = math.radians(8.0 * weight_shift)
+    l_hip = (hip_cx - hip_hw * math.cos(hip_roll_rad), hip_cy - hip_hw * math.sin(hip_roll_rad))
+    r_hip = (hip_cx + hip_hw * math.cos(hip_roll_rad), hip_cy + hip_hw * math.sin(hip_roll_rad))
+
+    l_knee = (l_hip[0] - 0.015 * onboard_w + 0.025 * weight_shift * onboard_w, 0.94 * height)
+    r_knee = (r_hip[0] + 0.015 * onboard_w + 0.025 * weight_shift * onboard_w, 0.94 * height)
+
+    l_palm = (riser_lx, hand_ly)
+    r_palm = (riser_rx, hand_ry)
+    l_elbow = (
+        0.52 * l_sh[0] + 0.48 * l_palm[0] - 0.065 * onboard_w,
+        0.52 * l_sh[1] + 0.48 * l_palm[1] + 0.055 * height,
+    )
+    r_elbow = (
+        0.52 * r_sh[0] + 0.48 * r_palm[0] + 0.065 * onboard_w,
+        0.52 * r_sh[1] + 0.48 * r_palm[1] + 0.055 * height,
+    )
+
+    head_cx = sh_cx + 0.035 * weight_shift * onboard_w
+    head_cy = 0.46 * height
+    nose_pt = (head_cx + 0.025 * weight_shift * onboard_w, head_cy + 0.01 * height)
+
+    # 1. Structural flight suit silhouette & bone segments (neutral low-chroma slate)
+    draw.polygon([l_sh, r_sh, r_hip, l_hip], fill=(28, 38, 52), outline=(64, 78, 96))
+    draw.line([l_hip, l_knee], fill=(64, 78, 96), width=6)
+    draw.line([r_hip, r_knee], fill=(64, 78, 96), width=6)
+    draw.line([l_sh, l_elbow], fill=(70, 86, 106), width=5)
+    draw.line([l_elbow, l_palm], fill=(70, 86, 106), width=5)
+    draw.line([r_sh, r_elbow], fill=(70, 86, 106), width=5)
+    draw.line([r_elbow, r_palm], fill=(70, 86, 106), width=5)
+    draw.ellipse(
+        [head_cx - 14, head_cy - 16, head_cx + 14, head_cy + 14],
+        fill=(32, 44, 58),
+        outline=(75, 92, 112),
+    )
+
+    # 2. Anatomical keypoint markers for CV skeleton extraction
+    # Nose / visor & knees (orange)
+    for ox, oy in [nose_pt, l_knee, r_knee]:
+        draw.ellipse([ox - 7, oy - 7, ox + 7, oy + 7], fill=(250, 115, 40))
+
+    # Hips (magenta)
+    for hx, hy in [l_hip, r_hip]:
+        draw.ellipse([hx - 8, hy - 8, hx + 8, hy + 8], fill=(220, 50, 200))
+
+    # Shoulders (cyan, symmetric around sh_cx)
+    for sx, sy in [l_sh, r_sh]:
+        draw.ellipse([sx - 9, sy - 9, sx + 9, sy + 9], fill=(35, 205, 230))
+
+    # Elbows (emerald green)
+    for ex, ey in [l_elbow, r_elbow]:
+        draw.ellipse([ex - 8, ey - 8, ex + 8, ey + 8], fill=(40, 225, 95))
+
+    # Palms / brake toggles (yellow)
     r_hand = 11
     draw.ellipse(
         [riser_lx - r_hand, hand_ly - r_hand, riser_lx + r_hand, hand_ly + r_hand],
@@ -229,10 +295,6 @@ def render_dual_view_frame_rgb(
         [riser_rx - r_hand, hand_ry - r_hand, riser_rx + r_hand, hand_ry + r_hand],
         fill=(248, 220, 40),
     )
-
-    torso_x = onboard_x0 + (0.5 + 0.22 * weight_shift) * onboard_w
-    torso_y = 0.88 * height
-    draw.ellipse([torso_x - 14, torso_y - 10, torso_x + 14, torso_y + 10], fill=(35, 200, 225))
 
     return np.array(img, dtype=np.uint8)
 
@@ -436,10 +498,8 @@ def render_cv_overlay_keyframe_png(
         draw.ellipse([cx - 38, cy - 18, cx + 38, cy + 18], outline=(0, 255, 120), width=2)
     draw.ellipse([px - 18, py - 16, px + 18, py + 16], outline=(255, 90, 90), width=2)
 
-    lx, ly = obs.left_hand_px
-    rx, ry = obs.right_hand_px
-    draw.rectangle([lx - 15, ly - 15, lx + 15, ly + 15], outline=(0, 255, 120), width=2)
-    draw.rectangle([rx - 15, ry - 15, rx + 15, ry + 15], outline=(0, 255, 120), width=2)
+    from .video_annotator import draw_pilot_skeleton_overlay
+    draw_pilot_skeleton_overlay(draw, obs)
 
     draw.rectangle([8, 8, chase_w - 8, 62], fill=(12, 18, 28))
     if trace.camera_mode == "rear_chase":

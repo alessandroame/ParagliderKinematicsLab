@@ -29,6 +29,10 @@ html_template = """<!DOCTYPE html>
       --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      max-width: 100vw;
+      overflow-x: hidden;
+    }
     body {
       background: var(--bg-dark);
       color: var(--text);
@@ -57,6 +61,7 @@ html_template = """<!DOCTYPE html>
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.5px;
+      white-space: nowrap;
     }
     .badge-cyan { background: rgba(0,240,255,0.15); color: var(--cyan); border: 1px solid rgba(0,240,255,0.3); }
     .badge-green { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
@@ -119,17 +124,19 @@ html_template = """<!DOCTYPE html>
     }
     .view-mode-tabs {
       display: flex;
+      flex-wrap: wrap;
       gap: 6px;
     }
     .mode-tab {
       background: #1e293b;
       border: 1px solid #334155;
       color: var(--text-muted);
-      padding: 4px 10px;
+      padding: 6px 10px;
       border-radius: 4px;
       font-size: 11px;
       font-weight: 600;
       cursor: pointer;
+      white-space: nowrap;
       transition: all 0.15s ease;
     }
     .mode-tab:hover { color: #fff; border-color: var(--cyan); }
@@ -138,7 +145,7 @@ html_template = """<!DOCTYPE html>
     .video-viewport-container {
       position: relative;
       width: 100%;
-      aspect-ratio: 16 / 9;
+      min-height: 480px;
       background: #080d16;
       display: flex;
       overflow: hidden;
@@ -146,7 +153,7 @@ html_template = """<!DOCTYPE html>
     .video-pane {
       position: relative;
       flex: 1;
-      height: 100%;
+      min-height: 480px;
       background: #000;
       display: flex;
       align-items: center;
@@ -156,14 +163,27 @@ html_template = """<!DOCTYPE html>
     video#rawVideo {
       width: 100%;
       height: 100%;
+      min-height: 220px;
       object-fit: contain;
       display: block;
       background: #000;
     }
     canvas#flightCanvas {
       width: 100%;
-      height: 100%;
+      height: 480px;
+      min-height: 480px;
       display: block;
+    }
+    @media (max-width: 768px) {
+      .video-viewport-container {
+        flex-direction: column;
+      }
+      #paneVideo {
+        min-height: 200px;
+      }
+      #paneCanvas {
+        min-height: 480px;
+      }
     }
     .video-pane-label {
       position: absolute;
@@ -193,14 +213,21 @@ html_template = """<!DOCTYPE html>
     .cv-toggles label {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
       cursor: pointer;
       color: var(--text-muted);
+      white-space: nowrap;
     }
-    .cv-toggles input[type="checkbox"] { accent-color: var(--cyan); }
+    .cv-toggles input[type="checkbox"] {
+      accent-color: var(--cyan);
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
 
     .transport-controls {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       gap: 10px;
       padding: 10px 14px;
@@ -219,11 +246,13 @@ html_template = """<!DOCTYPE html>
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-width: 36px;
+      min-width: 44px;
+      min-height: 36px;
     }
     .ctrl-btn:hover { background: #334155; color: var(--cyan); }
     .scrub-container {
       flex: 1;
+      min-width: 140px;
       position: relative;
       display: flex;
       flex-direction: column;
@@ -232,11 +261,26 @@ html_template = """<!DOCTYPE html>
     .scrub-slider {
       -webkit-appearance: none;
       width: 100%;
-      height: 8px;
+      height: 24px;
       border-radius: 4px;
       background: #1e293b;
       outline: none;
       cursor: pointer;
+    }
+    @media (max-width: 480px) {
+      button, .ctrl-btn, a[href], select, input[type="range"] {
+        min-width: 44px !important;
+        min-height: 44px !important;
+      }
+      .cv-toggles input[type="checkbox"] {
+        min-width: 44px !important;
+        min-height: 44px !important;
+      }
+      header a[href] {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 4px;
+      }
     }
     .scrub-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
@@ -507,8 +551,7 @@ html_template = """<!DOCTYPE html>
         <!-- Left Pane: Original Video -->
         <div class="video-pane" id="paneVideo">
           <span class="video-pane-label" id="labelRawVideo">VIDEO ORIGINALE (SINCRONIZZATO)</span>
-          <video id="rawVideo" playsinline muted preload="auto">
-            <source id="rawVideoSource" src="" type="video/mp4">
+          <video id="rawVideo" playsinline muted preload="none">
             Il tuo browser non supporta il playback video HTML5.
           </video>
         </div>
@@ -516,7 +559,7 @@ html_template = """<!DOCTYPE html>
         <!-- Right Pane: Computer Vision Canvas -->
         <div class="video-pane" id="paneCanvas">
           <span class="video-pane-label" id="labelCanvas">COMPUTER VISION TRACKING &amp; HUD</span>
-          <canvas id="flightCanvas" width="960" height="540"></canvas>
+          <canvas id="flightCanvas" data-primary-canvas width="960" height="540"></canvas>
         </div>
       </div>
 
@@ -526,7 +569,7 @@ html_template = """<!DOCTYPE html>
         <label><input type="checkbox" id="toggleCanopy" checked> Canopy Centroid &amp; Moments</label>
         <label><input type="checkbox" id="togglePilot" checked> Pilot &amp; Gravity Axis</label>
         <label><input type="checkbox" id="toggleSuspension" checked> Pendulum Line</label>
-        <label><input type="checkbox" id="toggleHands" checked> Pilot Hands (POV)</label>
+        <label><input type="checkbox" id="toggleHands" checked> Pilot Full Skeleton &amp; Hands (POV)</label>
         <label><input type="checkbox" id="toggleHorizon" checked> Sobel Horizon</label>
         <label><input type="checkbox" id="toggleHUD" checked> Diagnostics HUD</label>
       </div>
@@ -589,16 +632,17 @@ html_template = """<!DOCTYPE html>
       <!-- Pilot Controls extracted from Onboard POV -->
       <div class="card">
         <div class="card-title">
-          <span>Pilot Controls (Onboard POV Extracted)</span>
+          <span>Pilot Skeleton &amp; Controls (Onboard POV)</span>
+          <span class="badge badge-cyan" id="valPoseMode">FULL_SKELETON</span>
         </div>
         <div style="font-size: 11px; margin-bottom: 4px; display: flex; justify-content: space-between;">
-          <span>Left Brake &delta;<sub>L</sub></span>
+          <span>Left Brake &delta;<sub>L</sub> (Bi-Scapular Norm)</span>
           <span id="valBrakeL" style="font-family: var(--font-mono); color: var(--cyan);">0%</span>
         </div>
         <div class="meter-bar"><div class="meter-fill" id="fillBrakeL" style="width: 0%;"></div></div>
 
         <div style="font-size: 11px; margin: 8px 0 4px 0; display: flex; justify-content: space-between;">
-          <span>Right Brake &delta;<sub>R</sub></span>
+          <span>Right Brake &delta;<sub>R</sub> (Bi-Scapular Norm)</span>
           <span id="valBrakeR" style="font-family: var(--font-mono); color: var(--green);">0%</span>
         </div>
         <div class="meter-bar"><div class="meter-fill" id="fillBrakeR" style="width: 0%; background: var(--green);"></div></div>
@@ -609,6 +653,10 @@ html_template = """<!DOCTYPE html>
         </div>
         <div class="meter-bipolar">
           <div class="meter-bipolar-indicator" id="indWeightShift" style="left: 50%;"></div>
+        </div>
+        <div style="font-size: 10px; margin-top: 4px; color: var(--text-muted); display: flex; justify-content: space-between;">
+          <span>Torso Lean / Shoulder Roll</span>
+          <span id="valPoseAngles" style="font-family: var(--font-mono); color: var(--text);">0.0&deg; / 0.0&deg;</span>
         </div>
 
         <div id="bigEarsRow" style="font-size: 11px; margin: 8px 0 4px 0; display: flex; justify-content: space-between;">
@@ -656,7 +704,7 @@ html_template = """<!DOCTYPE html>
         <span style="font-size: 10px; color: var(--cyan);">Playhead sincronizzato</span>
       </div>
       <canvas class="telem-chart" id="chartAttitude"></canvas>
-      <div style="display: flex; gap: 12px; font-size: 11px; margin-top: 6px; justify-content: center;">
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; margin-top: 6px; justify-content: center;">
         <span style="color: #f59e0b;">&mdash; CV Video Detected</span>
         <span style="color: #ef4444; border-bottom: 1px dashed #ef4444;">-- Legacy Sim (Empirical)</span>
         <span style="color: #00f0ff;">&mdash; First-Principles (500 Hz)</span>
@@ -669,7 +717,7 @@ html_template = """<!DOCTYPE html>
         <span style="font-size: 10px; color: var(--text-muted);">&delta;<sub>L</sub>, &delta;<sub>R</sub>, w(t), x/c</span>
       </div>
       <canvas class="telem-chart" id="chartInputs"></canvas>
-      <div style="display: flex; gap: 12px; font-size: 11px; margin-top: 6px; justify-content: center;">
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; margin-top: 6px; justify-content: center;">
         <span style="color: #3b82f6;">&mdash; Brake L</span>
         <span style="color: #10b981;">&mdash; Brake R</span>
         <span style="color: #f59e0b;">&mdash; Weight-Shift</span>
@@ -684,18 +732,20 @@ html_template = """<!DOCTYPE html>
       <span>Valutazione della Bontà del Lavoro — Scheda Residui e System Identification</span>
       <span class="badge badge-green">Zero Empirical "Ricettoni"</span>
     </div>
-    <table class="scorecard-table">
-      <thead>
-        <tr>
-          <th>Parametro Fisico / Metrica</th>
-          <th>Rilevato da Video (CV)</th>
-          <th>Legacy ParagliderSim</th>
-          <th>First-Principles (Nuovo)</th>
-          <th>Miglioramento / Diagnosi</th>
-        </tr>
-      </thead>
-      <tbody id="scorecardBody"></tbody>
-    </table>
+    <div style="overflow-x: auto; width: 100%;">
+      <table class="scorecard-table">
+        <thead>
+          <tr>
+            <th>Parametro Fisico / Metrica</th>
+            <th>Rilevato da Video (CV)</th>
+            <th>Legacy ParagliderSim</th>
+            <th>First-Principles (Nuovo)</th>
+            <th>Miglioramento / Diagnosi</th>
+          </tr>
+        </thead>
+        <tbody id="scorecardBody"></tbody>
+      </table>
+    </div>
     <div style="font-size: 11px; color: var(--text-muted); margin-top: 10px; line-height: 1.5;" id="scorecardNotes"></div>
   </div>
 
@@ -795,10 +845,12 @@ html_template = """<!DOCTYPE html>
       scrub.value = 0;
 
       // Update Video element source if available
-      const vidSource = currentM.raw_video || `videos/${key}.mp4`;
-      rawVideo.src = vidSource;
-      rawVideo.load();
-      rawVideo.currentTime = 0;
+      if (currentM.raw_video) {
+        try {
+          rawVideo.src = currentM.raw_video;
+          rawVideo.currentTime = 0;
+        } catch (err) {}
+      }
 
       buildScrubMarkers();
       buildEventsList();
@@ -1029,6 +1081,32 @@ html_template = """<!DOCTYPE html>
       else if (e.code === 'ArrowRight') { e.preventDefault(); pause(); jumpToFrame(currentFrameIdx + 1); }
     });
 
+    function getInterpolatedSkeleton(obs, fIdx) {
+      const baseSk = obs.pilot_skeleton_px || {};
+      if (!isPlaying || !rawVideo || isNaN(rawVideo.duration) || fIdx + 1 >= currentM.frames.length) {
+        return baseSk;
+      }
+      const nextObs = currentM.frames[fIdx + 1];
+      if (!nextObs || !nextObs.pilot_skeleton_px) return baseSk;
+      const dt = Math.max(1e-4, nextObs.time_sec - obs.time_sec);
+      const alpha = Math.max(0.0, Math.min(1.0, (rawVideo.currentTime - obs.time_sec) / dt));
+      if (alpha <= 0.01) return baseSk;
+      const interp = {};
+      for (const [k, pt0] of Object.entries(baseSk)) {
+        const pt1 = nextObs.pilot_skeleton_px[k];
+        if (pt1 && pt0.length >= 3 && pt1.length >= 3) {
+          interp[k] = [
+            pt0[0] + alpha * (pt1[0] - pt0[0]),
+            pt0[1] + alpha * (pt1[1] - pt0[1]),
+            Math.min(pt0[2], pt1[2])
+          ];
+        } else {
+          interp[k] = pt0;
+        }
+      }
+      return interp;
+    }
+
     // Frame Rendering
     function renderCurrentFrame() {
       const obs = currentM.frames[currentFrameIdx];
@@ -1131,10 +1209,10 @@ html_template = """<!DOCTYPE html>
       }
       ctx.restore();
 
-      // Pilot body & weight-shift tilt
+      // Pilot body & weight-shift tilt in Chase View
       ctx.save();
       ctx.translate(px, py);
-      const wsAngle = (obs.weight_shift_norm || 0) * 16;
+      const wsAngle = (obs.torso_lean_deg !== undefined && obs.torso_lean_deg !== 0) ? obs.torso_lean_deg : ((obs.weight_shift_norm || 0) * 16);
       ctx.rotate(wsAngle * Math.PI / 180);
       ctx.fillStyle = '#0f172a';
       ctx.strokeStyle = '#ef4444';
@@ -1151,7 +1229,7 @@ html_template = """<!DOCTYPE html>
 
       ctx.restore(); // end left viewport clip
 
-      // --- 2. Right Viewport: Onboard POV ---
+      // --- 2. Right Viewport: Onboard POV (Full Pilot Skeleton & Controls) ---
       ctx.save();
       ctx.beginPath();
       ctx.rect(chaseW, 0, povW, h);
@@ -1176,25 +1254,200 @@ html_template = """<!DOCTYPE html>
       ctx.fillRect(chaseW + povW * 0.28 - 6, 80, 12, 12);
       ctx.fillRect(chaseW + povW * 0.72 - 6, 80, 12, 12);
 
-      // Hands position
-      const [lx, ly] = obs.left_hand_px;
-      const [rx, ry] = obs.right_hand_px;
+      const sk = getInterpolatedSkeleton(obs, currentFrameIdx);
+      const getPt = (k) => {
+        const v = sk[k];
+        return (v && v.length >= 3 && v[2] >= 0.5) ? [v[0], v[1], v[2]] : null;
+      };
 
-      // Pilot gloves
-      ctx.fillStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(lx, ly, 14, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(rx, ry, 14, 0, Math.PI * 2);
-      ctx.fill();
+      const lSh = getPt('l_shoulder');
+      const rSh = getPt('r_shoulder');
+      const lEl = getPt('l_elbow');
+      const rEl = getPt('r_elbow');
+      const lWr = getPt('l_wrist');
+      const rWr = getPt('r_wrist');
+      const lPa = getPt('l_palm') || [obs.left_hand_px[0], obs.left_hand_px[1], 1.0];
+      const rPa = getPt('r_palm') || [obs.right_hand_px[0], obs.right_hand_px[1], 1.0];
+      const lHi = getPt('l_hip');
+      const rHi = getPt('r_hip');
+      const lKn = getPt('l_knee');
+      const rKn = getPt('r_knee');
+      const nose = getPt('nose');
+      const lEar = getPt('l_ear');
+      const rEar = getPt('r_ear');
 
-      // Hands CV bounding boxes
+      // Full Pilot Skeleton & Hands Layer
       if (document.getElementById('toggleHands').checked) {
+        if (lSh && rSh) {
+          const midSh = [0.5 * (lSh[0] + rSh[0]), 0.5 * (lSh[1] + rSh[1])];
+          if (lHi && rHi) {
+            const midHi = [0.5 * (lHi[0] + rHi[0]), 0.5 * (lHi[1] + rHi[1])];
+            // Torso trapezoid fill
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.14)';
+            ctx.beginPath();
+            ctx.moveTo(lSh[0], lSh[1]);
+            ctx.lineTo(rSh[0], rSh[1]);
+            ctx.lineTo(rHi[0], rHi[1]);
+            ctx.lineTo(lHi[0], lHi[1]);
+            ctx.closePath();
+            ctx.fill();
+
+            // Lateral torso edges
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.moveTo(lSh[0], lSh[1]);
+            ctx.lineTo(lHi[0], lHi[1]);
+            ctx.moveTo(rSh[0], rSh[1]);
+            ctx.lineTo(rHi[0], rHi[1]);
+            ctx.stroke();
+
+            // Pelvis / Hip axis (`l_hip <-> r_hip`)
+            ctx.strokeStyle = '#c084fc';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(lHi[0], lHi[1]);
+            ctx.lineTo(rHi[0], rHi[1]);
+            ctx.stroke();
+
+            // Spine column (`mid_shoulder <-> mid_hip`) + weight-shift reference
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+            ctx.setLineDash([3, 3]);
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(chaseW + 0.5 * povW, midHi[1]);
+            ctx.lineTo(chaseW + 0.5 * povW, midSh[1] - 20);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(midHi[0], midHi[1]);
+            ctx.lineTo(midSh[0], midSh[1]);
+            ctx.stroke();
+          }
+
+          // Shoulder axis (`l_shoulder <-> r_shoulder`)
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(lSh[0], lSh[1]);
+          ctx.lineTo(rSh[0], rSh[1]);
+          ctx.stroke();
+
+          // Head / Helmet (`nose`, `l_ear`, `r_ear`) & Gaze vector in turn
+          if (nose) {
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(midSh[0], midSh[1]);
+            ctx.lineTo(nose[0], nose[1]);
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(nose[0], nose[1] - 2, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            if (lEar && rEar) {
+              ctx.strokeStyle = '#94a3b8';
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.moveTo(lEar[0], lEar[1]);
+              ctx.lineTo(rEar[0], rEar[1]);
+              ctx.stroke();
+            }
+
+            // Gaze direction vector
+            const gazeDx = 24 * (obs.weight_shift_norm || 0);
+            const gazeDy = -6;
+            ctx.strokeStyle = '#facc15';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(nose[0], nose[1]);
+            ctx.lineTo(nose[0] + gazeDx, nose[1] + gazeDy);
+            ctx.stroke();
+          }
+        }
+
+        // Legs (`hip -> knee`)
+        ctx.strokeStyle = '#a855f7';
+        ctx.lineWidth = 2.5;
+        if (lHi && lKn) {
+          ctx.beginPath();
+          ctx.moveTo(lHi[0], lHi[1]);
+          ctx.lineTo(lKn[0], lKn[1]);
+          ctx.stroke();
+        }
+        if (rHi && rKn) {
+          ctx.beginPath();
+          ctx.moveTo(rHi[0], rHi[1]);
+          ctx.lineTo(rKn[0], rKn[1]);
+          ctx.stroke();
+        }
+
+        // Left Arm Chain (`l_shoulder -> l_elbow -> l_wrist -> l_palm`) in Cyan #00f0ff
+        const lArm = [lSh, lEl, lWr, lPa].filter(Boolean);
+        if (lArm.length >= 2) {
+          ctx.strokeStyle = '#00f0ff';
+          ctx.lineWidth = 3.2;
+          ctx.beginPath();
+          ctx.moveTo(lArm[0][0], lArm[0][1]);
+          for (let i = 1; i < lArm.length; i++) ctx.lineTo(lArm[i][0], lArm[i][1]);
+          ctx.stroke();
+        }
+
+        // Right Arm Chain (`r_shoulder -> r_elbow -> r_wrist -> r_palm`) in Green #10b981
+        const rArm = [rSh, rEl, rWr, rPa].filter(Boolean);
+        if (rArm.length >= 2) {
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 3.2;
+          ctx.beginPath();
+          ctx.moveTo(rArm[0][0], rArm[0][1]);
+          for (let i = 1; i < rArm.length; i++) ctx.lineTo(rArm[i][0], rArm[i][1]);
+          ctx.stroke();
+        }
+
+        // Articular joint nodes weighted by conf >= 0.5
+        const jointNodes = [
+          [lSh, '#00f0ff', 5], [rSh, '#10b981', 5],
+          [lEl, '#00f0ff', 4.5], [rEl, '#10b981', 4.5],
+          [lWr, '#00f0ff', 4], [rWr, '#10b981', 4],
+          [lHi, '#c084fc', 5], [rHi, '#c084fc', 5],
+          [lKn, '#fb923c', 4], [rKn, '#fb923c', 4],
+          [nose, '#facc15', 4]
+        ];
+        for (const [pt, col, rad] of jointNodes) {
+          if (!pt) continue;
+          ctx.fillStyle = col;
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(pt[0], pt[1], rad, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+
+        // Brake toggle palm grips & bounding boxes
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.25)';
         ctx.strokeStyle = '#00f0ff';
         ctx.lineWidth = 2;
-        ctx.strokeRect(lx - 16, ly - 16, 32, 32);
-        ctx.strokeRect(rx - 16, ry - 16, 32, 32);
+        ctx.beginPath();
+        ctx.arc(lPa[0], lPa[1], 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeRect(lPa[0] - 14, lPa[1] - 14, 28, 28);
+
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(rPa[0], rPa[1], 11, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeRect(rPa[0] - 14, rPa[1] - 14, 28, 28);
       }
 
       // Border between panes
@@ -1254,6 +1507,17 @@ html_template = """<!DOCTYPE html>
       const wsPct = Math.round(obs.weight_shift_norm * 100);
       document.getElementById('valWeightShift').innerText = (wsPct === 0 ? '0% (Center)' : (wsPct > 0 ? '+' + wsPct + '% Right' : wsPct + '% Left'));
       document.getElementById('indWeightShift').style.left = (50 + (obs.weight_shift_norm * 45)) + '%';
+
+      const tLean = (obs.torso_lean_deg || 0);
+      const sRoll = (obs.shoulder_roll_deg || 0);
+      const poseEl = document.getElementById('valPoseAngles');
+      if (poseEl) {
+        poseEl.innerText = (tLean >= 0 ? '+' : '') + tLean.toFixed(1) + '° / ' + (sRoll >= 0 ? '+' : '') + sRoll.toFixed(1) + '°';
+      }
+      const modeEl = document.getElementById('valPoseMode');
+      if (modeEl) {
+        modeEl.innerText = obs.pose_mode || 'FULL_SKELETON';
+      }
 
       const bePct = Math.round((obs.big_ears_norm || 0) * 100);
       document.getElementById('valBigEars').innerText = bePct + '%';

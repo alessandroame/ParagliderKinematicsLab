@@ -1,5 +1,13 @@
 # WORKLOG.md — ParagliderKinematicsLab
 
+## [2026-11-08] - Estrazione Scheletro Pilota "Una Tantum", Esclusione Video PiP e Rendering Overlay (`Step 1-4`)
+- **Autore**: Alessandro Ame + Antigravity Agent
+- **Obiettivo**: Sostituire il rilevamento solo-mani con l'intero scheletro articolato del pilota a 15 nodi (`pilot_skeleton_px`) salvato una tantum nei tracciati JSON e disegnato sull'overlay di `inspector.py` e `video_annotator.py`, escludendo il video PiP poiché non sempre sincronizzato con il video principale.
+- **Attività svolte**:
+  1. Esteso `FrameObservation` (`schema.py`) con `pilot_skeleton_px`, `pose_mode`, `shoulder_roll_deg`, `torso_lean_deg` e `pip_rect_px`.
+  2. Implementato `detect_pilot_skeleton` e `_smooth_and_interpolate_skeleton_offline` (`vision_tracker.py`) con esclusione/mascheramento PiP (`ignore_pip=True`) e normalizzazione freni sulla larghezza bi-scapolare `dist(l_shoulder, r_shoulder)`.
+  3. Aggiornati `video_annotator.py` (`draw_pilot_skeleton_overlay`) e `inspector.py` (`getInterpolatedSkeleton` + rendering completo scheletro su `canvas#flightCanvas`) e rigenerate le 7 tracce JSON e il bundle diagnostico.
+
 ## [2026-11-08] - Rimozione Forzanti Euristiche (`R6`) in `physics_replay.py` e Rigenerazione Tracce ODE
 - **Autore**: Alessandro Ame + Antigravity Agent
 - **Obiettivo**: Eliminare tutte le forzanti ad-hoc (`dive_nose_down_aoa_deg`, `low_speed_aft_upwash_deg`, `clean_forward_surge_n`, `forward_dive_thrust_n`, `ws_carve_coord`, `coord_bonus`, `uncoordinated_brake`) sostituendole con l'integrazione ODE stato-spazio a 2 corpi guidata dai soli input pilota `u(t)`.

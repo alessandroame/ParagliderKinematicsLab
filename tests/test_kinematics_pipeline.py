@@ -101,6 +101,18 @@ class TestKinematicsPipeline(unittest.TestCase):
             self.assertLess(res_fp_ears.roll_rmse_deg, 1.8)
             self.assertGreater(res_curr_ears.roll_rmse_deg, res_fp_ears.roll_rmse_deg * 3.0)
 
+            # Verify one-time full pilot skeleton & biomechanical angles (PiP ignored)
+            sample_obs = trace_turn.frames[40]
+            self.assertEqual(sample_obs.pose_mode, "FULL_SKELETON")
+            self.assertIsNone(sample_obs.pip_rect_px)
+            expected_joints = {
+                "nose", "l_ear", "r_ear", "l_shoulder", "r_shoulder",
+                "l_elbow", "r_elbow", "l_wrist", "r_wrist", "l_palm", "r_palm",
+                "l_hip", "r_hip", "l_knee", "r_knee",
+            }
+            self.assertTrue(expected_joints.issubset(set(sample_obs.pilot_skeleton_px.keys())))
+            self.assertGreater(abs(sample_obs.torso_lean_deg), 2.0)
+
 
 if __name__ == "__main__":
     unittest.main()

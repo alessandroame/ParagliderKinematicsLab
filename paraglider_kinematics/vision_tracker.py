@@ -39,12 +39,14 @@ class DualViewParagliderTracker:
         onboard_roi_norm: Tuple[float, float, float, float] = (0.68, 0.0, 1.0, 1.0),
         pulley_y_norm: float = 0.20,
         carabiner_y_norm: float = 0.78,
+        ignore_pip: bool = True,
     ) -> None:
         self.wing = wing or WingGeometrySpec()
         self.chase_roi_norm = chase_roi_norm
         self.onboard_roi_norm = onboard_roi_norm
         self.pulley_y_norm = pulley_y_norm
         self.carabiner_y_norm = carabiner_y_norm
+        self.ignore_pip = ignore_pip
 
     @staticmethod
     def extract_video_frames_ffmpeg(
@@ -216,17 +218,156 @@ class DualViewParagliderTracker:
             float(conf),
         )
 
-    def detect_onboard_controls(
-        self, onboard_rgb: np.ndarray
-    ) -> Tuple[float, float, float, Tuple[float, float], Tuple[float, float]]:
+    @staticmethod
+    def detect_pip_region(frames_rgb: List[np.ndarray]) -> Optional[List[int]]:
         """
-        Detects Left & Right brake toggle hands and pilot torso lean in the Onboard POV ROI.
+        Detects a persistent Picture-in-Picture (PiP) corner sub-window (4%..28% of frame area)
+        via persistent rectangular border gradients across sample frames.
+        Note: Because PiP sub-videos in edited tutorials are not reliably synchronized with the main
+        video, any detected PiP region is strictly ignored/masked out and never used for telemetry.
+        """
+        if not frames_rgb:
+            return None
+        sample_indices = np.linspace(0, len(frames_rgb) - 1, min(8, len(frames_rgb)), dtype=int)
+        sample = np.stack([frames_rgb[i].astype(np.float32).mean(axis=2) for i in sample_indices], axis=0)
+        mean_gray = sample.mean(axis=0)
+        h, w = mean_gray.shape
+
+        gx = np.abs(np.diff(mean_gray, axis=1, prepend=mean_gray[:, :1]))
+        gy = np.abs(np.diff(mean_gray, axis=0, prepend=mean_gray[:1, :]))
+
+        # Check candidate corner insets (excluding the 68%/32% main Dual-View split)
+        candidates = [
+            (int(0.02 * w), int(0.02 * h), int(0.30 * w), int(0.32 * h)),
+            (int(0.02 * w), int(0.66 * h), int(0.30 * w), int(0.96 * h)),
+        ]
+        for x0, y0, x1, y1 in candidates:
+            top_edge = float(gy[max(0, y0 - 1) : min(h, y0 + 2), x0:x1].mean())
+            bot_edge = float(gy[max(0, y1 - 1) : min(h, y1 + 2), x0:x1].mean())
+            left_edge = float(gx[y0:y1, max(0, x0 - 1) : min(w, x0 + 2)].mean())
+            right_edge = float(gx[y0:y1, max(0, x1 - 1) : min(w, x1 + 2)].mean())
+            if min(top_edge, bot_edge, left_edge, right_edge) > 28.0:
+                return [x0, y0, x1, y1]
+        return None
+
+    @staticmethod
+    def mask_pip_region(frame_rgb: np.ndarray, pip_rect: Optional[List[int]]) -> np.ndarray:
+        """Masks out an unsynchronized PiP inset region so it cannot pollute main-video CV tracking."""
+        if not pip_rect or len(pip_rect) != 4:
+            return frame_rgb
+        masked = frame_rgb.copy()
+        x0, y0, x1, y1 = pip_rect
+        h, w, _ = masked.shape
+        x0, x1 = max(0, min(w, x0)), max(0, min(w, x1))
+        y0, y1 = max(0, min(h, y0)), max(0, min(h, y1))
+        if x1 > x0 and y1 > y0:
+            masked[y0:y1, x0:x1] = np.median(masked, axis=(0, 1)).astype(np.uint8)
+        return masked
+
+    def detect_pilot_skeleton(
+        self, onboard_rgb: np.ndarray, ox0: int = 0, oy0: int = 0
+    ) -> Tuple[
+        float,
+        float,
+        float,
+        Tuple[float, float],
+        Tuple[float, float],
+        Dict[str, List[float]],
+        str,
+        float,
+        float,
+    ]:
+        """
+        One-time anatomical pilot skeleton extractor for the Onboard POV ROI.
+        Extracts 15 keypoints (`nose`, `l_ear`, `r_ear`, `l_shoulder`, `r_shoulder`,
+        `l_elbow`, `r_elbow`, `l_wrist`, `r_wrist`, `l_palm`, `r_palm`, `l_hip`, `r_hip`,
+        `l_knee`, `r_knee`) with top-down kinematic chain constraints (`Spalla -> Gomito -> Polso -> Mano`
+        and `Spalle <-> Anche`), normalizing brake travel on bi-scapular width (`dist(l_shoulder, r_shoulder)`).
         """
         h, w, _ = onboard_rgb.shape
         r = onboard_rgb[:, :, 0].astype(np.float32)
         g = onboard_rgb[:, :, 1].astype(np.float32)
         b = onboard_rgb[:, :, 2].astype(np.float32)
 
+        # 1. Shoulders & Upper Torso Axis (`l_shoulder`, `r_shoulder`)
+        shoulder_mask = (b > 170.0) & (g > 150.0) & (r < 95.0)
+        tx, ty, _, _, t_area = self._moment_centroid_and_axes(shoulder_mask)
+        if t_area >= 10.0:
+            split_x = max(1, min(w - 1, int(round(tx))))
+            ls_mask = shoulder_mask.copy()
+            ls_mask[:, split_x:] = False
+            rs_mask = shoulder_mask.copy()
+            rs_mask[:, :split_x] = False
+            lsx, lsy, _, _, ls_area = self._moment_centroid_and_axes(ls_mask)
+            rsx, rsy, _, _, rs_area = self._moment_centroid_and_axes(rs_mask)
+            if ls_area >= 4.0 and rs_area >= 4.0:
+                l_sh = (lsx, lsy, min(1.0, ls_area / 65.0))
+                r_sh = (rsx, rsy, min(1.0, rs_area / 65.0))
+            else:
+                sh_hw = 0.16 * w
+                l_sh = (tx - sh_hw, ty, 0.75)
+                r_sh = (tx + sh_hw, ty, 0.75)
+        elif t_area >= 6.0:
+            sh_hw = 0.16 * w
+            l_sh = (tx - sh_hw, ty, 0.70)
+            r_sh = (tx + sh_hw, ty, 0.70)
+        else:
+            tx, ty = 0.50 * w, 0.60 * h
+            sh_hw = 0.16 * w
+            l_sh = (tx - sh_hw, ty, 0.35)
+            r_sh = (tx + sh_hw, ty, 0.35)
+
+        sh_cx = 0.5 * (l_sh[0] + r_sh[0])
+        sh_cy = 0.5 * (l_sh[1] + r_sh[1])
+        bi_shoulder_px = max(20.0, math.hypot(r_sh[0] - l_sh[0], r_sh[1] - l_sh[1]))
+        shoulder_roll_deg = math.degrees(math.atan2(r_sh[1] - l_sh[1], max(10.0, r_sh[0] - l_sh[0])))
+
+        # 2. Hips / Harness Pelvis Axis (`l_hip`, `r_hip`)
+        hip_mask = (r > 160.0) & (g < 105.0) & (b > 140.0)
+        hip_mask[: int(0.68 * h), :] = False
+        hip_mask[int(0.90 * h) :, :] = False
+        hx, hy, _, _, h_area = self._moment_centroid_and_axes(hip_mask)
+        if h_area >= 8.0:
+            h_split = max(1, min(w - 1, int(round(hx))))
+            lh_mask = hip_mask.copy()
+            lh_mask[:, h_split:] = False
+            rh_mask = hip_mask.copy()
+            rh_mask[:, :h_split] = False
+            lhx, lhy, _, _, lh_area = self._moment_centroid_and_axes(lh_mask)
+            rhx, rhy, _, _, rh_area = self._moment_centroid_and_axes(rh_mask)
+            if lh_area >= 3.0 and rh_area >= 3.0:
+                l_hip = (lhx, lhy, min(1.0, lh_area / 55.0))
+                r_hip = (rhx, rhy, min(1.0, rh_area / 55.0))
+            else:
+                hip_hw = 0.11 * w
+                l_hip = (hx - hip_hw, hy, 0.70)
+                r_hip = (hx + hip_hw, hy, 0.70)
+        else:
+            # Cocoon fallback when hips are enclosed inside harness speedbag (`hip_conf < 0.65`)
+            hx = 0.5 * w + 0.64 * (sh_cx - 0.5 * w)
+            hy = 0.82 * h
+            hip_hw = 0.11 * w
+            l_hip = (hx - hip_hw, hy, 0.45)
+            r_hip = (hx + hip_hw, hy, 0.45)
+
+        hip_cx = 0.5 * (l_hip[0] + r_hip[0])
+        hip_cy = 0.5 * (l_hip[1] + r_hip[1])
+
+        # 3. Torso Lean Angle & Harness Weight-Shift (`torso_lean_deg`, `weight_shift`)
+        torso_lean_deg = math.degrees(math.atan2(sh_cx - 0.5 * w, max(20.0, hip_cy - sh_cy)))
+        if t_area >= 6.0:
+            ws_shoulder = (sh_cx - 0.5 * w) / (0.22 * w)
+            hip_conf = 0.5 * (l_hip[2] + r_hip[2])
+            if hip_conf >= 0.65:
+                ws_hip = (hip_cx - 0.5 * w) / (0.14 * w)
+                ws_raw = 0.85 * ws_shoulder + 0.15 * ws_hip
+            else:
+                ws_raw = ws_shoulder
+            weight_shift = float(np.clip(ws_raw, -1.0, 1.0))
+        else:
+            weight_shift = 0.0
+
+        # 4. Brake Hands (`l_palm`, `r_palm`) with Top-Down Kinematic Reach Constraint
         toggle_mask = (r > 180.0) & (g > 165.0) & (b < 110.0)
         left_half = toggle_mask.copy()
         left_half[:, w // 2 :] = False
@@ -241,21 +382,215 @@ class DualViewParagliderTracker:
         travel_px = max(10.0, y_carabiner - y_pulley)
 
         if l_area < 5.0:
-            lx, ly = 0.28 * w, y_pulley
-        if r_area < 5.0:
-            rx, ry = 0.72 * w, y_pulley
-
-        brake_left = float(np.clip((ly - y_pulley) / travel_px, 0.0, 1.05))
-        brake_right = float(np.clip((ry - y_pulley) / travel_px, 0.0, 1.05))
-
-        torso_mask = (b > 170.0) & (g > 150.0) & (r < 95.0)
-        tx, ty, _, _, t_area = self._moment_centroid_and_axes(torso_mask)
-        if t_area >= 6.0:
-            weight_shift = float(np.clip((tx - 0.5 * w) / (0.22 * w), -1.0, 1.0))
+            lx, ly, l_conf = 0.28 * w, y_pulley, 0.35
         else:
-            weight_shift = 0.0
+            l_conf = min(1.0, l_area / 95.0)
 
-        return brake_left, brake_right, weight_shift, (lx, ly), (rx, ry)
+        if r_area < 5.0:
+            rx, ry, r_conf = 0.72 * w, y_pulley, 0.35
+        else:
+            r_conf = min(1.0, r_area / 95.0)
+
+        # Enforce anatomical arm reach from shoulder (`Spalla -> Mano`)
+        max_arm_reach = 3.8 * bi_shoulder_px
+        dist_l = math.hypot(lx - l_sh[0], ly - l_sh[1])
+        if dist_l > max_arm_reach and dist_l > 1e-3:
+            scale_l = max_arm_reach / dist_l
+            lx = l_sh[0] + (lx - l_sh[0]) * scale_l
+            ly = l_sh[1] + (ly - l_sh[1]) * scale_l
+
+        dist_r = math.hypot(rx - r_sh[0], ry - r_sh[1])
+        if dist_r > max_arm_reach and dist_r > 1e-3:
+            scale_r = max_arm_reach / dist_r
+            rx = r_sh[0] + (rx - r_sh[0]) * scale_r
+            ry = r_sh[1] + (ry - r_sh[1]) * scale_r
+
+        # Normalize brake travel using bi-scapular width (`dist(l_shoulder, r_shoulder)`) & pulley-carabiner span
+        nom_bi_shoulder = 0.32 * w
+        shoulder_scaled_travel = bi_shoulder_px * (travel_px / max(10.0, nom_bi_shoulder))
+        eff_travel_px = 0.5 * travel_px + 0.5 * shoulder_scaled_travel
+
+        brake_left = float(np.clip((ly - y_pulley) / eff_travel_px, 0.0, 1.05))
+        brake_right = float(np.clip((ry - y_pulley) / eff_travel_px, 0.0, 1.05))
+
+        # 5. Elbows (`l_elbow`, `r_elbow`) & Wrists (`l_wrist`, `r_wrist`)
+        elbow_mask = (g > 165.0) & (r < 105.0) & (b < 135.0)
+        el_split = max(1, min(w - 1, int(round(sh_cx))))
+        le_mask = elbow_mask.copy()
+        le_mask[:, el_split:] = False
+        re_mask = elbow_mask.copy()
+        re_mask[:, :el_split] = False
+        lex, ley, _, _, le_area = self._moment_centroid_and_axes(le_mask)
+        rex, rey, _, _, re_area = self._moment_centroid_and_axes(re_mask)
+
+        if le_area >= 4.0:
+            l_elbow = (lex, ley, min(1.0, le_area / 55.0))
+        else:
+            l_elbow = (
+                0.52 * l_sh[0] + 0.48 * lx - 0.065 * w,
+                0.52 * l_sh[1] + 0.48 * ly + 0.055 * h,
+                0.70,
+            )
+
+        if re_area >= 4.0:
+            r_elbow = (rex, rey, min(1.0, re_area / 55.0))
+        else:
+            r_elbow = (
+                0.52 * r_sh[0] + 0.48 * rx + 0.065 * w,
+                0.52 * r_sh[1] + 0.48 * ry + 0.055 * h,
+                0.70,
+            )
+
+        l_wrist = (
+            0.18 * l_elbow[0] + 0.82 * lx,
+            0.18 * l_elbow[1] + 0.82 * ly,
+            min(l_conf, l_elbow[2]),
+        )
+        r_wrist = (
+            0.18 * r_elbow[0] + 0.82 * rx,
+            0.18 * r_elbow[1] + 0.82 * ry,
+            min(r_conf, r_elbow[2]),
+        )
+
+        # 6. Head / Helmet (`nose`, `l_ear`, `r_ear`) & Knees (`l_knee`, `r_knee`)
+        orange_mask = (r > 185.0) & (g > 75.0) & (g < 160.0) & (b < 90.0)
+        head_mask = orange_mask.copy()
+        head_mask[int(0.56 * h) :, :] = False
+        nx, ny, _, _, n_area = self._moment_centroid_and_axes(head_mask)
+        if n_area >= 3.0:
+            nose = (nx, ny, min(1.0, n_area / 45.0))
+        else:
+            nose = (sh_cx + 0.06 * weight_shift * w, 0.47 * h, 0.65)
+
+        ear_dx = 0.14 * bi_shoulder_px
+        l_ear = (nose[0] - ear_dx, nose[1] - 0.01 * h, nose[2])
+        r_ear = (nose[0] + ear_dx, nose[1] - 0.01 * h, nose[2])
+
+        knee_mask = orange_mask.copy()
+        knee_mask[: int(0.86 * h), :] = False
+        k_split = max(1, min(w - 1, int(round(hip_cx))))
+        lk_mask = knee_mask.copy()
+        lk_mask[:, k_split:] = False
+        rk_mask = knee_mask.copy()
+        rk_mask[:, :k_split] = False
+        lkx, lky, _, _, lk_area = self._moment_centroid_and_axes(lk_mask)
+        rkx, rky, _, _, rk_area = self._moment_centroid_and_axes(rk_mask)
+
+        if lk_area >= 3.0:
+            l_knee = (lkx, lky, min(1.0, lk_area / 45.0))
+        else:
+            l_knee = (l_hip[0] - 0.015 * w + 0.025 * weight_shift * w, 0.94 * h, 0.60)
+
+        if rk_area >= 3.0:
+            r_knee = (rkx, rky, min(1.0, rk_area / 45.0))
+        else:
+            r_knee = (r_hip[0] + 0.015 * w + 0.025 * weight_shift * w, 0.94 * h, 0.60)
+
+        def _pt(p: Tuple[float, float, float]) -> List[float]:
+            return [round(float(p[0] + ox0), 1), round(float(p[1] + oy0), 1), round(float(p[2]), 3)]
+
+        skeleton_px: Dict[str, List[float]] = {
+            "nose": _pt(nose),
+            "l_ear": _pt(l_ear),
+            "r_ear": _pt(r_ear),
+            "l_shoulder": _pt(l_sh),
+            "r_shoulder": _pt(r_sh),
+            "l_elbow": _pt(l_elbow),
+            "r_elbow": _pt(r_elbow),
+            "l_wrist": _pt(l_wrist),
+            "r_wrist": _pt(r_wrist),
+            "l_palm": _pt((lx, ly, l_conf)),
+            "r_palm": _pt((rx, ry, r_conf)),
+            "l_hip": _pt(l_hip),
+            "r_hip": _pt(r_hip),
+            "l_knee": _pt(l_knee),
+            "r_knee": _pt(r_knee),
+        }
+
+        if t_area >= 6.0 and (l_area >= 5.0 or r_area >= 5.0):
+            pose_mode = "FULL_SKELETON"
+        elif l_area >= 5.0 or r_area >= 5.0:
+            pose_mode = "POV_HANDS_ONLY"
+        else:
+            pose_mode = "WIDE_NO_SKELETON"
+
+        return (
+            brake_left,
+            brake_right,
+            weight_shift,
+            (lx, ly),
+            (rx, ry),
+            skeleton_px,
+            pose_mode,
+            round(shoulder_roll_deg, 2),
+            round(torso_lean_deg, 2),
+        )
+
+    def detect_onboard_controls(
+        self, onboard_rgb: np.ndarray
+    ) -> Tuple[float, float, float, Tuple[float, float], Tuple[float, float]]:
+        """
+        Backward-compatible wrapper returning Left & Right brake toggle controls, weight-shift,
+        and hand coordinates from the full pilot skeleton detector.
+        """
+        brake_l, brake_r, weight_shift, l_hand, r_hand, _, _, _, _ = self.detect_pilot_skeleton(
+            onboard_rgb
+        )
+        return brake_l, brake_r, weight_shift, l_hand, r_hand
+
+    @staticmethod
+    def _smooth_and_interpolate_skeleton_offline(observations: List[FrameObservation]) -> None:
+        """
+        Offline zero-phase bidirectional smoothing & short-occlusion interpolation (`<= 10` frames)
+        on the one-time extracted `pilot_skeleton_px` trajectories.
+        """
+        n = len(observations)
+        if n < 3:
+            return
+        joint_keys = list(observations[0].pilot_skeleton_px.keys())
+        if not joint_keys:
+            return
+
+        for key in joint_keys:
+            xs = np.array([obs.pilot_skeleton_px[key][0] for obs in observations], dtype=np.float64)
+            ys = np.array([obs.pilot_skeleton_px[key][1] for obs in observations], dtype=np.float64)
+            confs = np.array([obs.pilot_skeleton_px[key][2] for obs in observations], dtype=np.float64)
+
+            # 1. Interpolate short occlusion gaps (<= 10 frames with conf < 0.5)
+            valid_idx = np.where(confs >= 0.5)[0]
+            if len(valid_idx) >= 2:
+                for k in range(len(valid_idx) - 1):
+                    i0, i1 = int(valid_idx[k]), int(valid_idx[k + 1])
+                    gap = i1 - i0 - 1
+                    if 0 < gap <= 10:
+                        for g_idx in range(i0 + 1, i1):
+                            alpha = (g_idx - i0) / float(i1 - i0)
+                            xs[g_idx] = (1.0 - alpha) * xs[i0] + alpha * xs[i1]
+                            ys[g_idx] = (1.0 - alpha) * ys[i0] + alpha * ys[i1]
+                            confs[g_idx] = 0.65
+
+            # 2. Zero-phase forward-backward smoothing (filtfilt 3-tap kernel [0.15, 0.70, 0.15])
+            kernel = np.array([0.15, 0.70, 0.15], dtype=np.float64)
+            for arr in (xs, ys):
+                pad_f = np.pad(arr, (1, 1), mode="edge")
+                fwd = np.convolve(pad_f, kernel, mode="valid")
+                pad_b = np.pad(fwd[::-1], (1, 1), mode="edge")
+                bwd = np.convolve(pad_b, kernel, mode="valid")[::-1]
+                arr[:] = bwd
+
+            for i, obs in enumerate(observations):
+                obs.pilot_skeleton_px[key] = [
+                    round(float(xs[i]), 1),
+                    round(float(ys[i]), 1),
+                    round(float(confs[i]), 3),
+                ]
+
+        # Sync left_hand_px and right_hand_px with smoothed palm keypoints
+        for obs in observations:
+            if "l_palm" in obs.pilot_skeleton_px:
+                obs.left_hand_px = obs.pilot_skeleton_px["l_palm"][:2]
+            if "r_palm" in obs.pilot_skeleton_px:
+                obs.right_hand_px = obs.pilot_skeleton_px["r_palm"][:2]
 
     def analyze_frames(
         self,
@@ -273,7 +608,10 @@ class DualViewParagliderTracker:
         dt = 1.0 / max(1.0, fps)
         heading_deg = 0.0
 
-        for idx, frame in enumerate(frames_rgb):
+        pip_rect = self.detect_pip_region(frames_rgb) if self.ignore_pip else None
+
+        for idx, raw_frame in enumerate(frames_rgb):
+            frame = self.mask_pip_region(raw_frame, pip_rect) if (self.ignore_pip and pip_rect) else raw_frame
             h, w, _ = frame.shape
             cx0 = int(self.chase_roi_norm[0] * w)
             cy0 = int(self.chase_roi_norm[1] * h)
@@ -300,9 +638,17 @@ class DualViewParagliderTracker:
             ) = self.detect_canopy_and_pilot(
                 chase_roi, horizon_deg, horizon_y, camera_mode=camera_mode
             )
-            brake_l, brake_r, weight_shift, l_hand, r_hand = self.detect_onboard_controls(
-                onboard_roi
-            )
+            (
+                brake_l,
+                brake_r,
+                weight_shift,
+                l_hand,
+                r_hand,
+                skeleton_px,
+                pose_mode,
+                shoulder_roll_deg,
+                torso_lean_deg,
+            ) = self.detect_pilot_skeleton(onboard_roi, ox0=ox0, oy0=oy0)
 
             sym_brake = 0.5 * (brake_l + brake_r)
             if idx > 0:
@@ -351,8 +697,15 @@ class DualViewParagliderTracker:
                     right_hand_px=[round(r_hand[0] + ox0, 1), round(r_hand[1] + oy0, 1)],
                     canopy_span_px=round(span_px, 1),
                     confidence=round(conf, 3),
+                    pilot_skeleton_px=skeleton_px,
+                    pose_mode=pose_mode,
+                    shoulder_roll_deg=shoulder_roll_deg,
+                    torso_lean_deg=torso_lean_deg,
+                    pip_rect_px=pip_rect,
                 )
             )
+
+        self._smooth_and_interpolate_skeleton_offline(observations)
 
         if len(observations) >= 3:
             for i in range(1, len(observations) - 1):

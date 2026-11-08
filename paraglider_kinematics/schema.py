@@ -51,6 +51,12 @@ class FrameObservation:
     right_hand_px: List[float] = field(default_factory=lambda: [0.0, 0.0])
     canopy_span_px: float = 0.0
     confidence: float = 1.0
+    # One-time extracted full pilot skeleton & biomechanical angles (PiP ignored/masked)
+    pilot_skeleton_px: Dict[str, List[float]] = field(default_factory=dict)
+    pose_mode: str = "FULL_SKELETON"
+    shoulder_roll_deg: float = 0.0
+    torso_lean_deg: float = 0.0
+    pip_rect_px: Optional[List[int]] = None
 
 
 @dataclass
