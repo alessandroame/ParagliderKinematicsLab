@@ -1,0 +1,146 @@
+{
+  "playlist_id": "PLvdxFY-XKFBUNIjpr7Bjgc1qKaDbSuGkf",
+  "playlist_url": "https://www.youtube.com/watch?v=cNQd-66o09s&list=PLvdxFY-XKFBUNIjpr7Bjgc1qKaDbSuGkf",
+  "playlist_title": "Théo de Blic's Tutorials",
+  "channel": "Theo de blic (@theoflies)",
+  "queued_at": "2026-11-08",
+  "items": [
+    {
+      "order": 0,
+      "video_id": "ykuaAYzB2qU",
+      "url": "https://www.youtube.com/watch?v=ykuaAYzB2qU",
+      "title": "BASIC PARAGLIDING EXERCISES - THEO DE BLIC's TUTORIALS",
+      "duration": "20:54",
+      "status": "in_progress_pitch_completed",
+      "target_maneuvers": [
+        "Pitch Pendulum & Catching the Dive (00:53-10:43) [COMPLETED]",
+        "Dynamic Turn (10:43-16:34) [QUEUED]",
+        "Rolls with Weight-Shift & Big Ears (16:34-20:40) [QUEUED]"
+      ],
+      "paraglidersim_modules": [
+        "ParafoilApparentMass.cs",
+        "UnsteadyStripAerodynamics.cs",
+        "MultiStripFlightEngine.cs"
+      ]
+    },
+    {
+      "order": 1,
+      "video_id": "cNQd-66o09s",
+      "url": "https://www.youtube.com/watch?v=cNQd-66o09s",
+      "title": "THÉO DE BLIC'S TUTORIALS S03E01 : WING OVER",
+      "duration": "17:19",
+      "status": "queued_p1",
+      "target_maneuvers": [
+        "Wingover phase synchronization (weight-shift at apex vs outside/inside brake timing)",
+        "Figure-8 ground track and >60..90 deg bank progression",
+        "Line tension unloading Prevention at high apex"
+      ],
+      "paraglidersim_modules": [
+        "MultiStripFlightEngine.cs",
+        "RiserRiggingAndHaptics.cs",
+        "UnsteadyStripAerodynamics.cs"
+      ]
+    },
+    {
+      "order": 2,
+      "video_id": "o8ltH5gGaaE",
+      "url": "https://www.youtube.com/watch?v=o8ltH5gGaaE",
+      "title": "THÉO DE BLIC'S TUTORIALS S04E01 : SPIRAL DIVE - PARAGLIDING",
+      "duration": "27:24",
+      "status": "queued_p1",
+      "target_maneuvers": [
+        "Progressive spiral entry (2 turns build-up)",
+        "Nose-down leading-edge attitude in locked spiral (-45..-55 deg pitch, >70 deg bank)",
+        "3 spiral exits: gradual bleed-off over >=360 deg, hands-up candle surge (abattée), and active pitch catch"
+      ],
+      "paraglidersim_modules": [
+        "MultiStripFlightEngine.cs",
+        "WashoutMotionFilter.cs"
+      ]
+    },
+    {
+      "order": 3,
+      "video_id": "6H_fCKfs3TI",
+      "url": "https://www.youtube.com/watch?v=6H_fCKfs3TI",
+      "title": "THEO DE BLIC'S TUTORIAL : RAPID DESCENT TECHNICS",
+      "duration": "15:45",
+      "status": "queued_p1",
+      "target_maneuvers": [
+        "Big Ears (Split-A) + Speedbar combination sink rate and pitch trim",
+        "B-Line Stall vs Spiral Dive sink efficiency",
+        "Big Ears + Weight-Shift steering"
+      ],
+      "paraglidersim_modules": [
+        "CanopyCellInflationModel.cs",
+        "ProceduralCanopyDeformer.cs",
+        "RiserRiggingAndHaptics.cs"
+      ]
+    },
+    {
+      "order": 4,
+      "video_id": "YVqvq28aE4o",
+      "url": "https://www.youtube.com/watch?v=YVqvq28aE4o",
+      "title": "HOW TO DO AN SIV PARAGLIDING TUTORIAL BY THEO DE BLIC",
+      "duration": "56:36",
+      "status": "queued_p1",
+      "target_maneuvers": [
+        "Asymmetric & Frontal collapses and counter-steering",
+        "Pitch control, compensating, and catching the dive",
+        "Full stall & backfly stabilization"
+      ],
+      "paraglidersim_modules": [
+        "CanopyCellInflationModel.cs",
+        "UnsteadyStripAerodynamics.cs",
+        "MultiStripFlightEngine.cs"
+      ]
+    },
+    {
+      "order": 5,
+      "video_id": "full_stall_2023",
+      "url": "https://www.youtube.com/playlist?list=PLvdxFY-XKFBUNIjpr7Bjgc1qKaDbSuGkf",
+      "title": "HOW TO DO A FULL STALL IN 2023 & S02E01 : FULL STALL",
+      "duration": "17:55 / 08:02",
+      "status": "queued_p2",
+      "target_maneuvers": [
+        "Goman-Khrabrov boundary-layer separation onset and canopy emptying",
+        "Locked hands down through initial aft rock -> controlled release to backfly (tail-slide) -> symmetric pre-surge recovery"
+      ],
+      "paraglidersim_modules": [
+        "UnsteadyStripAerodynamics.cs",
+        "CanopyCellInflationModel.cs"
+      ]
+    },
+    {
+      "order": 6,
+      "video_id": "ground_handling_series",
+      "url": "https://www.youtube.com/playlist?list=PLvdxFY-XKFBUNIjpr7Bjgc1qKaDbSuGkf",
+      "title": "Basic Ground Handling (Cobra Launch / Throw&Go / Kiting) & S03E03 : GROUND HANDLING SPIN",
+      "duration": "18:30 / 14:41",
+      "status": "queued_p2",
+      "target_maneuvers": [
+        "Forward/Reverse inflation pitch rise and A-riser release timing",
+        "Overhead braking check and crosswind lateral step torque"
+      ],
+      "paraglidersim_modules": [
+        "GroundContactDynamics.cs",
+        "SchoolSlopeScenario.cs"
+      ]
+    },
+    {
+      "order": 7,
+      "video_id": "autorotations_and_acro",
+      "url": "https://www.youtube.com/playlist?list=PLvdxFY-XKFBUNIjpr7Bjgc1qKaDbSuGkf",
+      "title": "S03E02 : AUTOROTATIONS, ep01 : Helico, ep02 : MISTYs, ep03 : Sat/Heli, S02E02 : MAC TWIST, S02E03 : Rhythmic Sat, S02E04 : Infinity Tumbling",
+      "duration": "multi-video",
+      "status": "queued_p3",
+      "target_maneuvers": [
+        "Asymmetric stall spin / autorotation yaw-roll coupling",
+        "High-G / negative-yaw axis transitions (SAT / Helico)"
+      ],
+      "paraglidersim_modules": [
+        "UnsteadyStripAerodynamics.cs",
+        "MultiStripFlightEngine.cs"
+      ]
+    }
+  ]
+}
