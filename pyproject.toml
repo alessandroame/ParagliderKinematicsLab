@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "paraglider-kinematics-lab"
+version = "0.1.0"
+description = "Frame-by-frame Computer Vision flight kinematics extractor and 500 Hz physics residual analyzer for ParagliderSim"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=1.24.0",
+    "Pillow>=9.4.0",
+]
+
+[project.optional-dependencies]
+cv = [
+    "opencv-python-headless>=4.8.0",
+    "mediapipe>=0.10.0",
+    "yt-dlp>=2024.1.0",
+    "scipy>=1.10.0",
+]
+
+[project.scripts]
+pg-kinematics = "paraglider_kinematics.cli:main"

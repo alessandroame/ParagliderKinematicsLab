@@ -1,0 +1,6557 @@
+{
+  "schema_version": "1.0.0",
+  "source_video_url": "https://www.youtube.com/watch?v=ykuaAYzB2qU",
+  "source_video_title": "BASIC PARAGLIDING EXERCISES - THEO DE BLIC's TUTORIALS",
+  "maneuver_id": "pitch_pendulum_uncaught",
+  "maneuver_name": "1A. Pitch Pendulum \u2014 Single Pull & Uncaught Dive (How to Pitch)",
+  "video_timestamp_range": "03:09-06:15",
+  "fps": 30.0,
+  "wing": {
+    "wing_id": "nova_mentor7_light_s",
+    "display_name": "NOVA Mentor 7 Light S (EN-B, 70-95 kg)",
+    "flat_span_m": 11.95,
+    "projected_span_m": 9.67,
+    "flat_area_m2": 24.4,
+    "projected_area_m2": 20.65,
+    "line_length_m": 7.1,
+    "max_brake_travel_m": 0.68,
+    "trim_speed_mps": 9.9,
+    "total_takeoff_mass_kg": 88.5
+  },
+  "phase_metrics": {
+    "pull_onset_sec": 0.633,
+    "pull_duration_sec": 1.033,
+    "peak_brake_norm": 0.779,
+    "aft_pitch_apex_deg": 18.75,
+    "aft_pitch_apex_time_sec": 1.8,
+    "pull_to_aft_apex_lag_sec": 1.167,
+    "release_onset_sec": 1.667,
+    "zero_pitch_crossing_sec": 2.433,
+    "release_to_overhead_lag_sec": 0.767,
+    "dive_pitch_min_deg": -25.42,
+    "dive_pitch_min_time_sec": 3.1,
+    "max_forward_surge_m": 3.05,
+    "min_pitch_rate_deg_sec": -55.5,
+    "pendulum_half_period_sec": 1.3,
+    "catch_onset_sec": null,
+    "catch_peak_brake_norm": null,
+    "catch_lead_before_dive_apex_sec": null
+  },
+  "events": [
+    {
+      "event_type": "pull_onset",
+      "time_sec": 0.6333,
+      "frame_index": 19,
+      "brake_sym_norm": 0.122,
+      "pitch_deg": -0.026,
+      "pitch_rate_deg_sec": 2.385,
+      "description": "Pilot initiates symmetrical brake pull from trim"
+    },
+    {
+      "event_type": "aft_pitch_apex",
+      "time_sec": 1.8,
+      "frame_index": 54,
+      "brake_sym_norm": 0.134,
+      "pitch_deg": 18.751,
+      "pitch_rate_deg_sec": 2.595,
+      "description": "Canopy reaches maximum aft pitch angle behind pilot (pendulum back-apex)"
+    },
+    {
+      "event_type": "release_onset",
+      "time_sec": 1.6667,
+      "frame_index": 50,
+      "brake_sym_norm": 0.744,
+      "pitch_deg": 17.558,
+      "pitch_rate_deg_sec": 11.76,
+      "description": "Pilot releases brakes briskly hands-up at aft pendulum apex"
+    },
+    {
+      "event_type": "overhead_zero_crossing",
+      "time_sec": 2.4333,
+      "frame_index": 73,
+      "brake_sym_norm": 0.0,
+      "pitch_deg": -1.247,
+      "pitch_rate_deg_sec": -54.48,
+      "description": "Canopy passes overhead (theta = 0 deg) accelerating into the forward dive"
+    },
+    {
+      "event_type": "forward_dive_apex",
+      "time_sec": 3.1,
+      "frame_index": 93,
+      "brake_sym_norm": 0.0,
+      "pitch_deg": -25.423,
+      "pitch_rate_deg_sec": -4.245,
+      "description": "Canopy reaches maximum forward dive angle ahead of pilot"
+    }
+  ],
+  "frames": [
+    {
+      "frame_index": 0,
+      "time_sec": 0.0,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.0,
+      "pitch_deg": -0.059,
+      "pitch_rate_deg_sec": 0.0,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.007,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        312.1,
+        118.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 1,
+      "time_sec": 0.0333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.0,
+      "pitch_deg": -0.018,
+      "pitch_rate_deg_sec": 1.14,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.002,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        312.0,
+        118.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 2,
+      "time_sec": 0.0667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.0,
+      "pitch_deg": 0.017,
+      "pitch_rate_deg_sec": 1.02,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.002,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.9,
+        118.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 3,
+      "time_sec": 0.1,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.0,
+      "pitch_deg": 0.05,
+      "pitch_rate_deg_sec": 0.495,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.006,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.8,
+        118.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 4,
+      "time_sec": 0.1333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.0,
+      "pitch_deg": 0.05,
+      "pitch_rate_deg_sec": -2.13,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.006,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.8,
+        118.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 5,
+      "time_sec": 0.1667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.142,
+      "pitch_deg": -0.092,
+      "pitch_rate_deg_sec": -2.13,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.011,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.8,
+        118.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 6,
+      "time_sec": 0.2,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.142,
+      "pitch_deg": -0.092,
+      "pitch_rate_deg_sec": -1.53,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.011,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.8,
+        118.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 7,
+      "time_sec": 0.2333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.244,
+      "pitch_deg": -0.194,
+      "pitch_rate_deg_sec": -0.735,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.024,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.8,
+        118.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 8,
+      "time_sec": 0.2667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.244,
+      "pitch_deg": -0.141,
+      "pitch_rate_deg_sec": 2.235,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.017,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.6,
+        118.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 9,
+      "time_sec": 0.3,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.244,
+      "pitch_deg": -0.045,
+      "pitch_rate_deg_sec": 0.18,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.006,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.3,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 10,
+      "time_sec": 0.3333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.345,
+      "pitch_deg": -0.129,
+      "pitch_rate_deg_sec": -1.155,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.016,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.2,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 11,
+      "time_sec": 0.3667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.345,
+      "pitch_deg": -0.122,
+      "pitch_rate_deg_sec": -3.615,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.015,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.2,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 12,
+      "time_sec": 0.4,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.568,
+      "pitch_deg": -0.37,
+      "pitch_rate_deg_sec": -3.72,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.046,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.3,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 13,
+      "time_sec": 0.4333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.568,
+      "pitch_deg": -0.37,
+      "pitch_rate_deg_sec": 0.0,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.046,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.3,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 14,
+      "time_sec": 0.4667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.568,
+      "pitch_deg": -0.37,
+      "pitch_rate_deg_sec": -1.44,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.046,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.3,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 15,
+      "time_sec": 0.5,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.664,
+      "pitch_deg": -0.466,
+      "pitch_rate_deg_sec": -1.44,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.058,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.3,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 16,
+      "time_sec": 0.5333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.664,
+      "pitch_deg": -0.466,
+      "pitch_rate_deg_sec": -0.18,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.058,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.3,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 17,
+      "time_sec": 0.5667,
+      "brake_left_norm": 0.0195,
+      "brake_right_norm": 0.0195,
+      "brake_rate_norm_per_sec": 0.5749,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.742,
+      "pitch_deg": -0.478,
+      "pitch_rate_deg_sec": 4.05,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.059,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.1,
+        118.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        114.1
+      ],
+      "right_hand_px": [
+        872.9,
+        114.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 18,
+      "time_sec": 0.6,
+      "brake_left_norm": 0.0578,
+      "brake_right_norm": 0.0578,
+      "brake_rate_norm_per_sec": 1.1483,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.742,
+      "pitch_deg": -0.196,
+      "pitch_rate_deg_sec": 6.78,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.024,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        310.2,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        126.1
+      ],
+      "right_hand_px": [
+        872.9,
+        126.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 19,
+      "time_sec": 0.6333,
+      "brake_left_norm": 0.1216,
+      "brake_right_norm": 0.1216,
+      "brake_rate_norm_per_sec": 1.915,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.742,
+      "pitch_deg": -0.026,
+      "pitch_rate_deg_sec": 2.385,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.003,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        309.6,
+        118.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        146.1
+      ],
+      "right_hand_px": [
+        872.9,
+        146.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 20,
+      "time_sec": 0.6667,
+      "brake_left_norm": 0.2072,
+      "brake_right_norm": 0.2072,
+      "brake_rate_norm_per_sec": 2.5689,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.756,
+      "pitch_deg": -0.037,
+      "pitch_rate_deg_sec": -0.375,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.005,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        309.6,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        172.9
+      ],
+      "right_hand_px": [
+        872.9,
+        172.9
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 21,
+      "time_sec": 0.7,
+      "brake_left_norm": 0.3068,
+      "brake_right_norm": 0.3068,
+      "brake_rate_norm_per_sec": 2.9886,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.771,
+      "pitch_deg": -0.051,
+      "pitch_rate_deg_sec": 0.0,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.006,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        309.6,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        204.1
+      ],
+      "right_hand_px": [
+        872.9,
+        204.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 22,
+      "time_sec": 0.7333,
+      "brake_left_norm": 0.4154,
+      "brake_right_norm": 0.4154,
+      "brake_rate_norm_per_sec": 3.2573,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.757,
+      "pitch_deg": -0.037,
+      "pitch_rate_deg_sec": -1.05,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.005,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        309.6,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        238.1
+      ],
+      "right_hand_px": [
+        872.9,
+        238.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 23,
+      "time_sec": 0.7667,
+      "brake_left_norm": 0.5201,
+      "brake_right_norm": 0.5201,
+      "brake_rate_norm_per_sec": 3.1418,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.841,
+      "pitch_deg": -0.121,
+      "pitch_rate_deg_sec": 1.695,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.015,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        309.6,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        270.9
+      ],
+      "right_hand_px": [
+        872.9,
+        270.9
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 24,
+      "time_sec": 0.8,
+      "brake_left_norm": 0.6159,
+      "brake_right_norm": 0.6159,
+      "brake_rate_norm_per_sec": 2.8744,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.86,
+      "pitch_deg": 0.076,
+      "pitch_rate_deg_sec": 7.935,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.009,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        308.9,
+        118.3
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        300.9
+      ],
+      "right_hand_px": [
+        872.9,
+        300.9
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 25,
+      "time_sec": 0.8333,
+      "brake_left_norm": 0.69,
+      "brake_right_norm": 0.69,
+      "brake_rate_norm_per_sec": 2.2218,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.86,
+      "pitch_deg": 0.408,
+      "pitch_rate_deg_sec": 7.38,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.051,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        307.9,
+        118.3
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        324.1
+      ],
+      "right_hand_px": [
+        872.9,
+        324.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 26,
+      "time_sec": 0.8667,
+      "brake_left_norm": 0.741,
+      "brake_right_norm": 0.741,
+      "brake_rate_norm_per_sec": 1.5314,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.941,
+      "pitch_deg": 0.568,
+      "pitch_rate_deg_sec": 9.81,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.07,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        307.1,
+        118.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        340.1
+      ],
+      "right_hand_px": [
+        872.9,
+        340.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 27,
+      "time_sec": 0.9,
+      "brake_left_norm": 0.7692,
+      "brake_right_norm": 0.7692,
+      "brake_rate_norm_per_sec": 0.8451,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.948,
+      "pitch_deg": 1.062,
+      "pitch_rate_deg_sec": 14.85,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.132,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        305.5,
+        118.3
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        348.9
+      ],
+      "right_hand_px": [
+        872.9,
+        348.9
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 28,
+      "time_sec": 0.9333,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": 0.3048,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.948,
+      "pitch_deg": 1.558,
+      "pitch_rate_deg_sec": 15.33,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.193,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        303.9,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 29,
+      "time_sec": 0.9667,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.019,
+      "pitch_deg": 2.084,
+      "pitch_rate_deg_sec": 17.04,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.258,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        301.9,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 30,
+      "time_sec": 1.0,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.019,
+      "pitch_deg": 2.694,
+      "pitch_rate_deg_sec": 21.54,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.334,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        299.9,
+        118.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 31,
+      "time_sec": 1.0333,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.019,
+      "pitch_deg": 3.52,
+      "pitch_rate_deg_sec": 22.68,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.436,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        297.3,
+        118.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 32,
+      "time_sec": 1.0667,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.019,
+      "pitch_deg": 4.206,
+      "pitch_rate_deg_sec": 24.555,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.521,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        295.1,
+        119.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 33,
+      "time_sec": 1.1,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.075,
+      "pitch_deg": 5.157,
+      "pitch_rate_deg_sec": 25.89,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.638,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        291.9,
+        119.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 34,
+      "time_sec": 1.1333,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.076,
+      "pitch_deg": 5.932,
+      "pitch_rate_deg_sec": 23.76,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.734,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        289.4,
+        119.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 35,
+      "time_sec": 1.1667,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.155,
+      "pitch_deg": 6.741,
+      "pitch_rate_deg_sec": 24.18,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.833,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        286.6,
+        120.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 36,
+      "time_sec": 1.2,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.169,
+      "pitch_deg": 7.544,
+      "pitch_rate_deg_sec": 27.9,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.932,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        284.0,
+        120.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 37,
+      "time_sec": 1.2333,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.169,
+      "pitch_deg": 8.601,
+      "pitch_rate_deg_sec": 28.26,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.062,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        280.6,
+        121.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 38,
+      "time_sec": 1.2667,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.169,
+      "pitch_deg": 9.428,
+      "pitch_rate_deg_sec": 26.685,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.163,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        278.0,
+        121.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 39,
+      "time_sec": 1.3,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.169,
+      "pitch_deg": 10.38,
+      "pitch_rate_deg_sec": 24.345,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.279,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        274.9,
+        122.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 40,
+      "time_sec": 1.3333,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.249,
+      "pitch_deg": 11.051,
+      "pitch_rate_deg_sec": 22.965,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.361,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        272.6,
+        122.8
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 41,
+      "time_sec": 1.3667,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.249,
+      "pitch_deg": 11.911,
+      "pitch_rate_deg_sec": 26.97,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.465,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        269.9,
+        123.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 42,
+      "time_sec": 1.4,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.249,
+      "pitch_deg": 12.849,
+      "pitch_rate_deg_sec": 22.545,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.579,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        267.0,
+        123.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 43,
+      "time_sec": 1.4333,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.249,
+      "pitch_deg": 13.414,
+      "pitch_rate_deg_sec": 20.1,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.647,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        265.3,
+        124.8
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 44,
+      "time_sec": 1.4667,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.301,
+      "pitch_deg": 14.189,
+      "pitch_rate_deg_sec": 18.75,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.74,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        262.6,
+        124.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 45,
+      "time_sec": 1.5,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.301,
+      "pitch_deg": 14.664,
+      "pitch_rate_deg_sec": 18.51,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.797,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        261.3,
+        125.8
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 46,
+      "time_sec": 1.5333,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.301,
+      "pitch_deg": 15.423,
+      "pitch_rate_deg_sec": 21.915,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.888,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        258.8,
+        126.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 47,
+      "time_sec": 1.5667,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.301,
+      "pitch_deg": 16.125,
+      "pitch_rate_deg_sec": 18.66,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.972,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        256.6,
+        127.0
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 48,
+      "time_sec": 1.6,
+      "brake_left_norm": 0.7794,
+      "brake_right_norm": 0.7794,
+      "brake_rate_norm_per_sec": -0.0012,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.294,
+      "pitch_deg": 16.667,
+      "pitch_rate_deg_sec": 15.135,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.036,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        255.1,
+        127.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        352.1
+      ],
+      "right_hand_px": [
+        872.9,
+        352.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 49,
+      "time_sec": 1.6333,
+      "brake_left_norm": 0.7756,
+      "brake_right_norm": 0.7756,
+      "brake_rate_norm_per_sec": -0.1153,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.294,
+      "pitch_deg": 17.134,
+      "pitch_rate_deg_sec": 13.365,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.092,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        253.7,
+        128.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        350.9
+      ],
+      "right_hand_px": [
+        872.9,
+        350.9
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 50,
+      "time_sec": 1.6667,
+      "brake_left_norm": 0.7436,
+      "brake_right_norm": 0.7436,
+      "brake_rate_norm_per_sec": -0.9592,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.386,
+      "pitch_deg": 17.558,
+      "pitch_rate_deg_sec": 11.76,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.142,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        252.0,
+        128.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        340.9
+      ],
+      "right_hand_px": [
+        872.9,
+        340.9
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 51,
+      "time_sec": 1.7,
+      "brake_left_norm": 0.6415,
+      "brake_right_norm": 0.6415,
+      "brake_rate_norm_per_sec": -3.0643,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.386,
+      "pitch_deg": 17.918,
+      "pitch_rate_deg_sec": 9.12,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.184,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        251.0,
+        129.0
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        308.9
+      ],
+      "right_hand_px": [
+        872.9,
+        308.9
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 52,
+      "time_sec": 1.7333,
+      "brake_left_norm": 0.4818,
+      "brake_right_norm": 0.4818,
+      "brake_rate_norm_per_sec": -4.7906,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.386,
+      "pitch_deg": 18.166,
+      "pitch_rate_deg_sec": 9.6,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.214,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        250.3,
+        129.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        258.9
+      ],
+      "right_hand_px": [
+        872.9,
+        258.9
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 53,
+      "time_sec": 1.7667,
+      "brake_left_norm": 0.2969,
+      "brake_right_norm": 0.2966,
+      "brake_rate_norm_per_sec": -5.5513,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.386,
+      "pitch_deg": 18.558,
+      "pitch_rate_deg_sec": 8.775,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.26,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        248.9,
+        129.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        201.0
+      ],
+      "right_hand_px": [
+        872.9,
+        200.9
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 54,
+      "time_sec": 1.8,
+      "brake_left_norm": 0.1343,
+      "brake_right_norm": 0.1344,
+      "brake_rate_norm_per_sec": -4.8716,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.386,
+      "pitch_deg": 18.751,
+      "pitch_rate_deg_sec": 2.595,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.282,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        248.4,
+        129.8
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        150.1
+      ],
+      "right_hand_px": [
+        872.9,
+        150.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 55,
+      "time_sec": 1.8333,
+      "brake_left_norm": 0.032,
+      "brake_right_norm": 0.0322,
+      "brake_rate_norm_per_sec": -3.0673,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.386,
+      "pitch_deg": 18.731,
+      "pitch_rate_deg_sec": -4.095,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.28,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        248.5,
+        129.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        118.0
+      ],
+      "right_hand_px": [
+        872.9,
+        118.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 56,
+      "time_sec": 1.8667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": -0.9538,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.507,
+      "pitch_deg": 18.478,
+      "pitch_rate_deg_sec": -6.36,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.25,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        248.9,
+        129.8
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 57,
+      "time_sec": 1.9,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.507,
+      "pitch_deg": 18.307,
+      "pitch_rate_deg_sec": -9.555,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.23,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        249.4,
+        129.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 58,
+      "time_sec": 1.9333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.507,
+      "pitch_deg": 17.841,
+      "pitch_rate_deg_sec": -13.5,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.175,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        250.9,
+        129.3
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 59,
+      "time_sec": 1.9667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.507,
+      "pitch_deg": 17.407,
+      "pitch_rate_deg_sec": -17.22,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.124,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        252.1,
+        128.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 60,
+      "time_sec": 2.0,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 16.693,
+      "pitch_rate_deg_sec": -19.635,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -2.039,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        254.4,
+        127.7
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 61,
+      "time_sec": 2.0333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 16.098,
+      "pitch_rate_deg_sec": -23.175,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.969,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        256.2,
+        127.0
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 62,
+      "time_sec": 2.0667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 15.148,
+      "pitch_rate_deg_sec": -28.275,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.855,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        259.1,
+        126.0
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 63,
+      "time_sec": 2.1,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 14.213,
+      "pitch_rate_deg_sec": -32.73,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.743,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        262.0,
+        125.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 64,
+      "time_sec": 2.1333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 12.966,
+      "pitch_rate_deg_sec": -37.59,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.593,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        265.9,
+        124.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 65,
+      "time_sec": 2.1667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 11.707,
+      "pitch_rate_deg_sec": -39.66,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.441,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        269.8,
+        123.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 66,
+      "time_sec": 2.2,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 10.322,
+      "pitch_rate_deg_sec": -43.05,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.272,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        274.2,
+        122.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 67,
+      "time_sec": 2.2333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 8.837,
+      "pitch_rate_deg_sec": -46.515,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.091,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        278.9,
+        121.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 68,
+      "time_sec": 2.2667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 7.221,
+      "pitch_rate_deg_sec": -47.625,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.892,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        284.0,
+        120.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 69,
+      "time_sec": 2.3,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 5.662,
+      "pitch_rate_deg_sec": -47.085,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.7,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        289.0,
+        119.7
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 70,
+      "time_sec": 2.3333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 4.082,
+      "pitch_rate_deg_sec": -49.905,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.505,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        294.0,
+        119.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 71,
+      "time_sec": 2.3667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 2.335,
+      "pitch_rate_deg_sec": -52.125,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.289,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        299.6,
+        118.7
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 72,
+      "time_sec": 2.4,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": 0.607,
+      "pitch_rate_deg_sec": -53.73,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.075,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        305.2,
+        118.3
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 73,
+      "time_sec": 2.4333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": -1.247,
+      "pitch_rate_deg_sec": -54.48,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.155,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        311.2,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 74,
+      "time_sec": 2.4667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": -3.025,
+      "pitch_rate_deg_sec": -55.47,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.375,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        316.9,
+        118.3
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 75,
+      "time_sec": 2.5,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": -4.945,
+      "pitch_rate_deg_sec": -53.115,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.612,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        323.1,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 76,
+      "time_sec": 2.5333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": -6.566,
+      "pitch_rate_deg_sec": -53.16,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.812,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        328.3,
+        119.1
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 77,
+      "time_sec": 2.5667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": -8.489,
+      "pitch_rate_deg_sec": -51.705,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.048,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        334.5,
+        119.5
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 78,
+      "time_sec": 2.6,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": -10.013,
+      "pitch_rate_deg_sec": -49.92,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.234,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        339.3,
+        120.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 79,
+      "time_sec": 2.6333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.482,
+      "pitch_deg": -11.817,
+      "pitch_rate_deg_sec": -49.8,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.454,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        345.0,
+        121.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 80,
+      "time_sec": 2.6667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.35,
+      "pitch_deg": -13.333,
+      "pitch_rate_deg_sec": -47.415,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.637,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        350.3,
+        122.3
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 81,
+      "time_sec": 2.7,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.341,
+      "pitch_deg": -14.978,
+      "pitch_rate_deg_sec": -44.595,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.835,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        355.5,
+        123.3
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 82,
+      "time_sec": 2.7333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.341,
+      "pitch_deg": -16.306,
+      "pitch_rate_deg_sec": -40.14,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.993,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        359.6,
+        124.7
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 83,
+      "time_sec": 2.7667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.341,
+      "pitch_deg": -17.654,
+      "pitch_rate_deg_sec": -39.705,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.153,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        363.8,
+        125.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 84,
+      "time_sec": 2.8,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.35,
+      "pitch_deg": -18.953,
+      "pitch_rate_deg_sec": -38.685,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.306,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        367.8,
+        126.9
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 85,
+      "time_sec": 2.8333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.35,
+      "pitch_deg": -20.233,
+      "pitch_rate_deg_sec": -33.78,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.455,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        371.7,
+        128.3
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 86,
+      "time_sec": 2.8667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.275,
+      "pitch_deg": -21.205,
+      "pitch_rate_deg_sec": -30.825,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.568,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        374.9,
+        129.2
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 87,
+      "time_sec": 2.9,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.283,
+      "pitch_deg": -22.288,
+      "pitch_rate_deg_sec": -28.275,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.693,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        378.3,
+        130.2
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 88,
+      "time_sec": 2.9333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.283,
+      "pitch_deg": -23.09,
+      "pitch_rate_deg_sec": -22.83,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.784,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        380.6,
+        131.5
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 89,
+      "time_sec": 2.9667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.283,
+      "pitch_deg": -23.81,
+      "pitch_rate_deg_sec": -19.86,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.866,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        382.6,
+        132.5
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 90,
+      "time_sec": 3.0,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.283,
+      "pitch_deg": -24.414,
+      "pitch_rate_deg_sec": -17.565,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.935,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        384.5,
+        133.0
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 91,
+      "time_sec": 3.0333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.283,
+      "pitch_deg": -24.981,
+      "pitch_rate_deg_sec": -10.71,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.998,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        386.3,
+        133.6
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 92,
+      "time_sec": 3.0667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.21,
+      "pitch_deg": -25.128,
+      "pitch_rate_deg_sec": -6.63,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 3.015,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        386.8,
+        134.1
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 93,
+      "time_sec": 3.1,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.196,
+      "pitch_deg": -25.423,
+      "pitch_rate_deg_sec": -4.245,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 3.048,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        387.9,
+        134.2
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 94,
+      "time_sec": 3.1333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.196,
+      "pitch_deg": -25.411,
+      "pitch_rate_deg_sec": 0.54,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 3.047,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        387.8,
+        134.4
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 95,
+      "time_sec": 3.1667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.196,
+      "pitch_deg": -25.387,
+      "pitch_rate_deg_sec": 1.98,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 3.044,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        387.7,
+        134.4
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 96,
+      "time_sec": 3.2,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.169,
+      "pitch_deg": -25.279,
+      "pitch_rate_deg_sec": 6.975,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 3.032,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        387.4,
+        134.4
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 97,
+      "time_sec": 3.2333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.169,
+      "pitch_deg": -24.922,
+      "pitch_rate_deg_sec": 10.935,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.992,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        386.3,
+        134.1
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 98,
+      "time_sec": 3.2667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.169,
+      "pitch_deg": -24.55,
+      "pitch_rate_deg_sec": 11.955,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.95,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        385.2,
+        133.6
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 99,
+      "time_sec": 3.3,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.169,
+      "pitch_deg": -24.125,
+      "pitch_rate_deg_sec": 17.325,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.902,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        384.0,
+        132.9
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 100,
+      "time_sec": 3.3333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.071,
+      "pitch_deg": -23.395,
+      "pitch_rate_deg_sec": 20.505,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.819,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        382.1,
+        132.3
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 101,
+      "time_sec": 3.3667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.071,
+      "pitch_deg": -22.758,
+      "pitch_rate_deg_sec": 21.03,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.747,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        380.3,
+        131.2
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 102,
+      "time_sec": 3.4,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 1.071,
+      "pitch_deg": -21.993,
+      "pitch_rate_deg_sec": 28.14,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.659,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        378.1,
+        130.1
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 103,
+      "time_sec": 3.4333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.983,
+      "pitch_deg": -20.882,
+      "pitch_rate_deg_sec": 30.225,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.531,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        374.8,
+        129.4
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 104,
+      "time_sec": 3.4667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.97,
+      "pitch_deg": -19.978,
+      "pitch_rate_deg_sec": 30.015,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.426,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        372.2,
+        128.2
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 105,
+      "time_sec": 3.5,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.983,
+      "pitch_deg": -18.881,
+      "pitch_rate_deg_sec": 32.49,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.298,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        368.7,
+        127.3
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 106,
+      "time_sec": 3.5333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.983,
+      "pitch_deg": -17.812,
+      "pitch_rate_deg_sec": 35.82,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.172,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        365.5,
+        126.0
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 107,
+      "time_sec": 3.5667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.887,
+      "pitch_deg": -16.493,
+      "pitch_rate_deg_sec": 36.66,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 2.016,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        361.7,
+        125.0
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        302.9
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 108,
+      "time_sec": 3.6,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.965,
+      "pitch_deg": -15.368,
+      "pitch_rate_deg_sec": 35.73,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.882,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        357.9,
+        124.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 109,
+      "time_sec": 3.6333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.965,
+      "pitch_deg": -14.111,
+      "pitch_rate_deg_sec": 43.32,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.731,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        354.0,
+        122.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 110,
+      "time_sec": 3.6667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.814,
+      "pitch_deg": -12.48,
+      "pitch_rate_deg_sec": 44.22,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.534,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        349.3,
+        122.0
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 111,
+      "time_sec": 3.7,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.841,
+      "pitch_deg": -11.163,
+      "pitch_rate_deg_sec": 40.035,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.375,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        345.0,
+        121.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 112,
+      "time_sec": 3.7333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.841,
+      "pitch_deg": -9.811,
+      "pitch_rate_deg_sec": 44.07,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.21,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        340.8,
+        120.3
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 113,
+      "time_sec": 3.7667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.719,
+      "pitch_deg": -8.225,
+      "pitch_rate_deg_sec": 44.565,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.016,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        336.1,
+        119.8
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 114,
+      "time_sec": 3.8,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.719,
+      "pitch_deg": -6.84,
+      "pitch_rate_deg_sec": 43.74,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.846,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        331.6,
+        119.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 115,
+      "time_sec": 3.8333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.665,
+      "pitch_deg": -5.309,
+      "pitch_rate_deg_sec": 43.05,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.657,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        326.9,
+        119.0
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 116,
+      "time_sec": 3.8667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.665,
+      "pitch_deg": -3.97,
+      "pitch_rate_deg_sec": 41.49,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.492,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        322.6,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 117,
+      "time_sec": 3.9,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.665,
+      "pitch_deg": -2.543,
+      "pitch_rate_deg_sec": 43.065,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.315,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        318.0,
+        118.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 118,
+      "time_sec": 3.9333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.665,
+      "pitch_deg": -1.099,
+      "pitch_rate_deg_sec": 43.68,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.136,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        313.3,
+        118.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 119,
+      "time_sec": 3.9667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.611,
+      "pitch_deg": 0.369,
+      "pitch_rate_deg_sec": 37.635,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.046,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        308.8,
+        118.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 120,
+      "time_sec": 4.0,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.645,
+      "pitch_deg": 1.41,
+      "pitch_rate_deg_sec": 36.48,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.175,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        305.3,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 121,
+      "time_sec": 4.0333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.546,
+      "pitch_deg": 2.801,
+      "pitch_rate_deg_sec": 39.33,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.347,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        301.2,
+        118.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 122,
+      "time_sec": 4.0667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.546,
+      "pitch_deg": 4.032,
+      "pitch_rate_deg_sec": 36.39,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.499,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        297.2,
+        119.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 123,
+      "time_sec": 4.1,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.546,
+      "pitch_deg": 5.227,
+      "pitch_rate_deg_sec": 37.215,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.647,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        293.4,
+        119.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 124,
+      "time_sec": 4.1333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.415,
+      "pitch_deg": 6.513,
+      "pitch_rate_deg_sec": 33.795,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.805,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        289.7,
+        119.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 125,
+      "time_sec": 4.1667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.415,
+      "pitch_deg": 7.48,
+      "pitch_rate_deg_sec": 28.515,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.924,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        286.6,
+        120.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 126,
+      "time_sec": 4.2,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.313,
+      "pitch_deg": 8.414,
+      "pitch_rate_deg_sec": 29.295,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.039,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        284.0,
+        120.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 127,
+      "time_sec": 4.2333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.308,
+      "pitch_deg": 9.433,
+      "pitch_rate_deg_sec": 26.895,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.164,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        280.7,
+        121.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 128,
+      "time_sec": 4.2667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.308,
+      "pitch_deg": 10.207,
+      "pitch_rate_deg_sec": 23.73,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.258,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        278.3,
+        121.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 129,
+      "time_sec": 4.3,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.272,
+      "pitch_deg": 11.015,
+      "pitch_rate_deg_sec": 20.925,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.357,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        275.8,
+        122.0
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 130,
+      "time_sec": 4.3333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.272,
+      "pitch_deg": 11.602,
+      "pitch_rate_deg_sec": 19.77,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.428,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        274.0,
+        122.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 131,
+      "time_sec": 4.3667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.084,
+      "pitch_deg": 12.333,
+      "pitch_rate_deg_sec": 22.41,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.517,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        272.3,
+        123.0
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 132,
+      "time_sec": 4.4,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.0,
+      "pitch_deg": 13.096,
+      "pitch_rate_deg_sec": 17.265,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.609,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        270.0,
+        123.0
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 133,
+      "time_sec": 4.4333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.0,
+      "pitch_deg": 13.484,
+      "pitch_rate_deg_sec": 9.705,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.656,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        268.8,
+        123.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 134,
+      "time_sec": 4.4667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.0,
+      "pitch_deg": 13.743,
+      "pitch_rate_deg_sec": 7.275,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.687,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        268.1,
+        123.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 135,
+      "time_sec": 4.5,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.0,
+      "pitch_deg": 13.969,
+      "pitch_rate_deg_sec": 3.93,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.714,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        267.3,
+        123.8
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 136,
+      "time_sec": 4.5333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.0,
+      "pitch_deg": 14.005,
+      "pitch_rate_deg_sec": 1.305,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.718,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        267.3,
+        124.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 137,
+      "time_sec": 4.5667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.0,
+      "pitch_deg": 14.056,
+      "pitch_rate_deg_sec": -0.06,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.724,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        267.1,
+        124.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 138,
+      "time_sec": 4.6,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": 0.0,
+      "pitch_deg": 14.001,
+      "pitch_rate_deg_sec": 4.05,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.718,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        267.3,
+        124.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 139,
+      "time_sec": 4.6333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.283,
+      "pitch_deg": 14.326,
+      "pitch_rate_deg_sec": 1.095,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.757,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        267.2,
+        124.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 140,
+      "time_sec": 4.6667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.283,
+      "pitch_deg": 14.074,
+      "pitch_rate_deg_sec": -8.7,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.727,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        267.9,
+        123.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 141,
+      "time_sec": 4.7,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.122,
+      "pitch_deg": 13.746,
+      "pitch_rate_deg_sec": -9.03,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.687,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        268.5,
+        123.8
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 142,
+      "time_sec": 4.7333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.122,
+      "pitch_deg": 13.472,
+      "pitch_rate_deg_sec": -10.8,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.654,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        269.3,
+        123.3
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 143,
+      "time_sec": 4.7667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.122,
+      "pitch_deg": 13.026,
+      "pitch_rate_deg_sec": -8.505,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.6,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        270.7,
+        123.0
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 144,
+      "time_sec": 4.8,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.477,
+      "pitch_deg": 12.905,
+      "pitch_rate_deg_sec": -10.11,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.586,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        272.3,
+        122.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 145,
+      "time_sec": 4.8333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.477,
+      "pitch_deg": 12.352,
+      "pitch_rate_deg_sec": -11.31,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.519,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        274.0,
+        122.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 146,
+      "time_sec": 4.8667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.558,
+      "pitch_deg": 12.151,
+      "pitch_rate_deg_sec": -13.035,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.494,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        274.8,
+        122.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 147,
+      "time_sec": 4.9,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.558,
+      "pitch_deg": 11.483,
+      "pitch_rate_deg_sec": -21.045,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.413,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        277.0,
+        121.7
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 148,
+      "time_sec": 4.9333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.558,
+      "pitch_deg": 10.748,
+      "pitch_rate_deg_sec": -20.175,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.324,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        279.3,
+        121.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 149,
+      "time_sec": 4.9667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.631,
+      "pitch_deg": 10.138,
+      "pitch_rate_deg_sec": -21.405,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.25,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        281.5,
+        121.0
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 150,
+      "time_sec": 5.0,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.631,
+      "pitch_deg": 9.321,
+      "pitch_rate_deg_sec": -23.25,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.15,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        284.1,
+        120.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 151,
+      "time_sec": 5.0333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.631,
+      "pitch_deg": 8.588,
+      "pitch_rate_deg_sec": -21.315,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -1.06,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        286.4,
+        120.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 152,
+      "time_sec": 5.0667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.726,
+      "pitch_deg": 7.9,
+      "pitch_rate_deg_sec": -22.47,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.976,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        288.9,
+        119.7
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 153,
+      "time_sec": 5.1,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.726,
+      "pitch_deg": 7.09,
+      "pitch_rate_deg_sec": -23.955,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.876,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        291.5,
+        119.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 154,
+      "time_sec": 5.1333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.726,
+      "pitch_deg": 6.303,
+      "pitch_rate_deg_sec": -25.56,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.779,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        294.0,
+        119.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 155,
+      "time_sec": 5.1667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.756,
+      "pitch_deg": 5.386,
+      "pitch_rate_deg_sec": -25.035,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.666,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        297.0,
+        119.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 156,
+      "time_sec": 5.2,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.786,
+      "pitch_deg": 4.634,
+      "pitch_rate_deg_sec": -22.47,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.574,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        299.5,
+        118.7
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 157,
+      "time_sec": 5.2333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.882,
+      "pitch_deg": 3.888,
+      "pitch_rate_deg_sec": -25.29,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.481,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        302.2,
+        118.6
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 158,
+      "time_sec": 5.2667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.882,
+      "pitch_deg": 2.948,
+      "pitch_rate_deg_sec": -26.355,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.365,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        305.3,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 159,
+      "time_sec": 5.3,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.882,
+      "pitch_deg": 2.131,
+      "pitch_rate_deg_sec": -21.525,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.264,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        307.9,
+        118.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 160,
+      "time_sec": 5.3333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.882,
+      "pitch_deg": 1.513,
+      "pitch_rate_deg_sec": -23.025,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.188,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        309.9,
+        118.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 161,
+      "time_sec": 5.3667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.958,
+      "pitch_deg": 0.596,
+      "pitch_rate_deg_sec": -27.87,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": -0.074,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        313.1,
+        118.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 162,
+      "time_sec": 5.4,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -0.958,
+      "pitch_deg": -0.345,
+      "pitch_rate_deg_sec": -22.005,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.043,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        316.1,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 163,
+      "time_sec": 5.4333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.042,
+      "pitch_deg": -0.871,
+      "pitch_rate_deg_sec": -20.145,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.108,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        318.1,
+        118.3
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 164,
+      "time_sec": 5.4667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.042,
+      "pitch_deg": -1.688,
+      "pitch_rate_deg_sec": -23.745,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.209,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        320.8,
+        118.4
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 165,
+      "time_sec": 5.5,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.043,
+      "pitch_deg": -2.454,
+      "pitch_rate_deg_sec": -21.42,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.304,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        323.2,
+        118.5
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 166,
+      "time_sec": 5.5333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.043,
+      "pitch_deg": -3.116,
+      "pitch_rate_deg_sec": -20.175,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.386,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        325.3,
+        118.7
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 167,
+      "time_sec": 5.5667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.097,
+      "pitch_deg": -3.799,
+      "pitch_rate_deg_sec": -18.57,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.47,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        327.7,
+        118.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 168,
+      "time_sec": 5.6,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.097,
+      "pitch_deg": -4.354,
+      "pitch_rate_deg_sec": -18.195,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.539,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        329.5,
+        119.1
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 169,
+      "time_sec": 5.6333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.097,
+      "pitch_deg": -5.012,
+      "pitch_rate_deg_sec": -16.185,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.62,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        331.6,
+        119.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 170,
+      "time_sec": 5.6667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.192,
+      "pitch_deg": -5.433,
+      "pitch_rate_deg_sec": -15.345,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.672,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        333.3,
+        119.5
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 171,
+      "time_sec": 5.7,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.194,
+      "pitch_deg": -6.035,
+      "pitch_rate_deg_sec": -12.48,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.746,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        335.2,
+        119.7
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 172,
+      "time_sec": 5.7333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.194,
+      "pitch_deg": -6.265,
+      "pitch_rate_deg_sec": -10.275,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.775,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        335.9,
+        119.7
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 173,
+      "time_sec": 5.7667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.194,
+      "pitch_deg": -6.72,
+      "pitch_rate_deg_sec": -12.39,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.831,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        337.3,
+        120.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 174,
+      "time_sec": 5.8,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.194,
+      "pitch_deg": -7.091,
+      "pitch_rate_deg_sec": -8.25,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.877,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        338.6,
+        120.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 175,
+      "time_sec": 5.8333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.267,
+      "pitch_deg": -7.27,
+      "pitch_rate_deg_sec": -9.57,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.898,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        339.4,
+        120.2
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 176,
+      "time_sec": 5.8667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.267,
+      "pitch_deg": -7.729,
+      "pitch_rate_deg_sec": -7.425,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.955,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        340.8,
+        120.4
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 177,
+      "time_sec": 5.9,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.267,
+      "pitch_deg": -7.765,
+      "pitch_rate_deg_sec": -2.325,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.959,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        340.9,
+        120.7
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 178,
+      "time_sec": 5.9333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.319,
+      "pitch_deg": -7.884,
+      "pitch_rate_deg_sec": -1.95,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.974,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        341.5,
+        120.8
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 179,
+      "time_sec": 5.9667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.333,
+      "pitch_deg": -7.895,
+      "pitch_rate_deg_sec": -2.49,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.975,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        341.5,
+        120.9
+      ],
+      "pilot_centroid_px": [
+        311.9,
+        303.0
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 180,
+      "time_sec": 6.0,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.286,
+      "pitch_deg": -8.05,
+      "pitch_rate_deg_sec": -3.18,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.994,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        341.9,
+        120.8
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 181,
+      "time_sec": 6.0333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.286,
+      "pitch_deg": -8.107,
+      "pitch_rate_deg_sec": -1.29,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.001,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        342.1,
+        120.8
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 182,
+      "time_sec": 6.0667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.286,
+      "pitch_deg": -8.136,
+      "pitch_rate_deg_sec": 0.72,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 1.005,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        342.2,
+        120.8
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 183,
+      "time_sec": 6.1,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.286,
+      "pitch_deg": -8.059,
+      "pitch_rate_deg_sec": 1.98,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.995,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        342.0,
+        120.8
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 184,
+      "time_sec": 6.1333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.286,
+      "pitch_deg": -8.004,
+      "pitch_rate_deg_sec": 3.51,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.989,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        341.8,
+        120.8
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 185,
+      "time_sec": 6.1667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.391,
+      "pitch_deg": -7.825,
+      "pitch_rate_deg_sec": 5.445,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.967,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        341.6,
+        120.7
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 186,
+      "time_sec": 6.2,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.382,
+      "pitch_deg": -7.641,
+      "pitch_rate_deg_sec": 4.98,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.944,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        340.9,
+        120.6
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 187,
+      "time_sec": 6.2333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.382,
+      "pitch_deg": -7.493,
+      "pitch_rate_deg_sec": 6.945,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.926,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        340.5,
+        120.5
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 188,
+      "time_sec": 6.2667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.382,
+      "pitch_deg": -7.178,
+      "pitch_rate_deg_sec": 8.94,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.887,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        339.5,
+        120.3
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 189,
+      "time_sec": 6.3,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.382,
+      "pitch_deg": -6.897,
+      "pitch_rate_deg_sec": 10.02,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.853,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        338.6,
+        120.2
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 190,
+      "time_sec": 6.3333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.516,
+      "pitch_deg": -6.51,
+      "pitch_rate_deg_sec": 10.47,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.805,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        337.7,
+        120.3
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 191,
+      "time_sec": 6.3667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.51,
+      "pitch_deg": -6.199,
+      "pitch_rate_deg_sec": 10.77,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.767,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        336.8,
+        119.8
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 192,
+      "time_sec": 6.4,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.485,
+      "pitch_deg": -5.792,
+      "pitch_rate_deg_sec": 10.605,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.717,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        335.4,
+        119.7
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 193,
+      "time_sec": 6.4333,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.485,
+      "pitch_deg": -5.492,
+      "pitch_rate_deg_sec": 10.155,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.68,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        334.4,
+        119.5
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 194,
+      "time_sec": 6.4667,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.485,
+      "pitch_deg": -5.115,
+      "pitch_rate_deg_sec": 12.975,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.633,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        333.2,
+        119.5
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    },
+    {
+      "frame_index": 195,
+      "time_sec": 6.5,
+      "brake_left_norm": 0.0003,
+      "brake_right_norm": 0.0003,
+      "brake_rate_norm_per_sec": 0.0002,
+      "weight_shift_norm": -0.0004,
+      "big_ears_norm": 0.0,
+      "horizon_tilt_deg": -1.485,
+      "pitch_deg": -4.627,
+      "pitch_rate_deg_sec": 14.649,
+      "roll_deg": 0.0,
+      "roll_rate_deg_sec": 0.0,
+      "canopy_forward_offset_m": 0.573,
+      "canopy_lateral_offset_m": 0.0,
+      "canopy_centroid_px": [
+        331.6,
+        119.6
+      ],
+      "pilot_centroid_px": [
+        312.0,
+        303.1
+      ],
+      "left_hand_px": [
+        738.1,
+        108.1
+      ],
+      "right_hand_px": [
+        872.9,
+        108.1
+      ],
+      "confidence": 1.0
+    }
+  ]
+}

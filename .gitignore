@@ -1,0 +1,23 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Video cache and extracted raw frames
+videos/
+frames_cache/
+*.mp4
+*.mkv
+*.webm
+*.mov
+
+# Generated local outputs (keep sample traces in data/)
+out/
+*.egg-info/
+dist/
+build/
