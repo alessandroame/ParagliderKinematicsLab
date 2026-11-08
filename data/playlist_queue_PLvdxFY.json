@@ -11,11 +11,11 @@
       "url": "https://www.youtube.com/watch?v=ykuaAYzB2qU",
       "title": "BASIC PARAGLIDING EXERCISES - THEO DE BLIC's TUTORIALS",
       "duration": "20:54",
-      "status": "in_progress_pitch_completed",
+      "status": "completed",
       "target_maneuvers": [
-        "Pitch Pendulum & Catching the Dive (00:53-10:43) [COMPLETED]",
-        "Dynamic Turn (10:43-16:34) [QUEUED]",
-        "Rolls with Weight-Shift & Big Ears (16:34-20:40) [QUEUED]"
+        "Pitch Pendulum & Catching the Dive (00:53-10:43) [COMPLETED: 1A, 1B, 1C]",
+        "Dynamic Turn (10:43-16:34) [COMPLETED: 2A, 2B]",
+        "Rolls with Weight-Shift & Big Ears (16:34-20:40) [COMPLETED: 3A, 3B]"
       ],
       "paraglidersim_modules": [
         "ParafoilApparentMass.cs",
