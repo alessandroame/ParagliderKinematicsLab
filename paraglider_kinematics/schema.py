@@ -40,13 +40,16 @@ class FrameObservation:
     pitch_rate_deg_sec: float
     roll_deg: float
     roll_rate_deg_sec: float
-    canopy_forward_offset_m: float
-    canopy_lateral_offset_m: float
+    yaw_rate_deg_sec: float = 0.0
+    heading_deg: float = 0.0
+    canopy_forward_offset_m: float = 0.0
+    canopy_lateral_offset_m: float = 0.0
     # Pixel-space bounding & confidence diagnostics
     canopy_centroid_px: List[float] = field(default_factory=lambda: [0.0, 0.0])
     pilot_centroid_px: List[float] = field(default_factory=lambda: [0.0, 0.0])
     left_hand_px: List[float] = field(default_factory=lambda: [0.0, 0.0])
     right_hand_px: List[float] = field(default_factory=lambda: [0.0, 0.0])
+    canopy_span_px: float = 0.0
     confidence: float = 1.0
 
 
@@ -61,6 +64,10 @@ class CommandTimingEvent:
     pitch_deg: float
     pitch_rate_deg_sec: float
     description: str
+    roll_deg: float = 0.0
+    roll_rate_deg_sec: float = 0.0
+    weight_shift_norm: float = 0.0
+    brake_asym_norm: float = 0.0
 
 
 @dataclass
@@ -84,6 +91,15 @@ class PhaseLagMetrics:
     catch_onset_sec: Optional[float] = None
     catch_peak_brake_norm: Optional[float] = None
     catch_lead_before_dive_apex_sec: Optional[float] = None
+    # Lateral-directional metrics for Dynamic Turn & Roll exercises
+    weight_shift_onset_sec: Optional[float] = None
+    brake_to_ws_lag_sec: Optional[float] = None
+    peak_roll_deg: Optional[float] = None
+    peak_roll_time_sec: Optional[float] = None
+    peak_roll_rate_deg_sec: Optional[float] = None
+    roll_half_period_sec: Optional[float] = None
+    swing_roll_peaks_deg: List[float] = field(default_factory=list)
+    total_heading_carve_deg: Optional[float] = None
 
 
 @dataclass
@@ -101,6 +117,7 @@ class ManeuverKinematicsTrace:
     phase_metrics: PhaseLagMetrics
     events: List[CommandTimingEvent]
     frames: List[FrameObservation]
+    camera_mode: str = "side_chase"
 
     def to_dict(self) -> Dict:
         return asdict(self)
