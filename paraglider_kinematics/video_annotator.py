@@ -22,7 +22,7 @@ def draw_pilot_skeleton_overlay(draw: ImageDraw.ImageDraw, obs) -> None:
     """
     Draws the complete articulated pilot skeleton (`nose`, `l_ear`, `r_ear`, `l_shoulder`, `r_shoulder`,
     `l_elbow`, `r_elbow`, `l_wrist`, `r_wrist`, `l_palm`, `r_palm`, `l_hip`, `r_hip`, `l_knee`, `r_knee`)
-    with confidence filtering (`conf >= 0.5`), torso/pelvis axes, and turn gaze vector.
+    with confidence filtering (`conf >= 0.5`), risers + taut brake cables, torso/pelvis axes, and turn gaze vector.
     """
     sk = getattr(obs, "pilot_skeleton_px", None) or {}
 
@@ -62,11 +62,30 @@ def draw_pilot_skeleton_overlay(draw: ImageDraw.ImageDraw, obs) -> None:
             gy = nose[1] - 6.0
             draw.line([nose, (gx, gy)], fill=(250, 204, 21), width=2)
 
-    # Legs (`hip -> knee`)
+    # Legs (`hip -> knee`): only draw when real knee keypoint is confident (`conf >= 0.5`);
+    # in ONBOARD_360_KNEE mode, highlight the 360 camera knee mount instead of fake vertical legs.
+    shot_mode = getattr(obs, "shot_mode", "") or ""
     if l_hi and l_kn:
         draw.line([l_hi, l_kn], fill=(168, 85, 247), width=2)
-    if r_hi and r_kn:
+        if shot_mode == "ONBOARD_360_KNEE":
+            draw.ellipse([l_kn[0] - 6, l_kn[1] - 6, l_kn[0] + 6, l_kn[1] + 6], outline=(56, 189, 248), width=2)
+    if r_hi and r_kn and shot_mode != "ONBOARD_360_KNEE":
         draw.line([r_hi, r_kn], fill=(168, 85, 247), width=2)
+
+    # Risers (`carabiner -> pulley`) & Taut Brake Cables (`pulley -> palm`)
+    lx, ly = l_pa if l_pa else obs.left_hand_px
+    rx, ry = r_pa if r_pa else obs.right_hand_px
+    if l_sh and r_sh:
+        pulley_l = (l_sh[0] - 8.0, min(l_sh[1] - 28.0, ly - 4.0))
+        pulley_r = (r_sh[0] + 8.0, min(r_sh[1] - 28.0, ry - 4.0))
+        carab_l = (l_sh[0] - 4.0, l_sh[1] + 18.0)
+        carab_r = (r_sh[0] + 4.0, r_sh[1] + 18.0)
+        draw.line([carab_l, pulley_l], fill=(148, 163, 184), width=2)
+        draw.line([carab_r, pulley_r], fill=(148, 163, 184), width=2)
+        draw.ellipse([pulley_l[0] - 3, pulley_l[1] - 3, pulley_l[0] + 3, pulley_l[1] + 3], fill=(250, 204, 21))
+        draw.ellipse([pulley_r[0] - 3, pulley_r[1] - 3, pulley_r[0] + 3, pulley_r[1] + 3], fill=(250, 204, 21))
+        draw.line([pulley_l, (lx, ly)], fill=(250, 204, 21), width=2)
+        draw.line([pulley_r, (rx, ry)], fill=(250, 204, 21), width=2)
 
     # Left arm kinematic chain (`l_shoulder -> l_elbow -> l_wrist -> l_palm`) in Cyan
     l_chain = [p for p in (l_sh, l_el, l_wr, l_pa) if p is not None]
@@ -97,8 +116,6 @@ def draw_pilot_skeleton_overlay(draw: ImageDraw.ImageDraw, obs) -> None:
             draw.ellipse([pt[0] - 4, pt[1] - 4, pt[0] + 4, pt[1] + 4], fill=color, outline=(15, 23, 42))
 
     # Brake toggle palm boxes
-    lx, ly = l_pa if l_pa else obs.left_hand_px
-    rx, ry = r_pa if r_pa else obs.right_hand_px
     draw.rectangle([lx - 14, ly - 14, lx + 14, ly + 14], outline=(0, 240, 255), width=2)
     draw.rectangle([rx - 14, ry - 14, rx + 14, ry + 14], outline=(16, 185, 129), width=2)
 
@@ -198,7 +215,7 @@ def render_annotated_frame(
 
     # 5. Onboard POV Overlay Banner
     draw.rectangle([(chase_w + 8, 8), (width - 8, 38)], fill=(10, 16, 26), outline=(50, 70, 100))
-    pov_title = f"ONBOARD POV | SKELETON & BRAKES"
+    pov_title = "ONBOARD POV | SKELETON & BRAKES"
     draw.text((chase_w + 14, 16), pov_title, fill=(120, 210, 255))
 
     # Brake travel mini-gauges in Onboard ROI

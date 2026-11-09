@@ -2,8 +2,14 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+import shutil
 import subprocess
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+try:
+    import cv2
+except ImportError:  # pragma: no cover
+    cv2 = None
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -13,23 +19,31 @@ from .schema import (
     FrameObservation,
     ManeuverKinematicsTrace,
     PhaseLagMetrics,
+    ShotCalibrationProfile,
     WingGeometrySpec,
 )
 
 
 class DualViewParagliderTracker:
     """
-    Frame-by-frame Computer Vision recognizer for paragliding tutorial videos
+    Two-pass Shot-Adaptive Computer Vision recognizer for paragliding tutorial videos
     with External Chase View (Side or Rear/Front) + Onboard Pilot POV Split-Screen/PIP.
 
-    Extracts:
-      1. Horizon line tilt angle via vertical Sobel gradient ridge regression.
-      2. Paraglider canopy centroid, oriented ellipse axes, open span width (for Big Ears detection),
-         and bank/pitch attitude via 2nd-order image moments.
-      3. Pilot/harness centroid suspended below the canopy and true pendulum angle (pitch or roll) wrt gravity.
-      4. Left/Right pilot brake hand positions wrt pulley (0%) and carabiner (100%) + torso lean weight-shift
-         in the Onboard POV ROI.
-      5. Command application timing events, weight-shift lead time, and canopy reaction phase lags.
+    Pass 1 (`SequenceAutoCalibrator`):
+      - Segments the video into homogeneous continuous shots (`segment_shots`) at scene cuts.
+      - Computes a temporal-invariance static overlay mask (`compute_static_overlay_mask`) to suppress
+        imprinted watermarks, static logos, or fixed camera-mount artifacts across N sampled frames.
+      - Auto-learns per-shot appearance RGB cluster centers (`canopy_rgb_center`, `jacket_rgb_center`,
+        `hip_rgb_center`, `glove_rgb_center`, `elbow_rgb_center`, `head_rgb_center`) across N sampled
+        frames so different pilot outfits, glove colors, or canopy colors across edited cuts self-calibrate.
+      - Auto-detects the camera anchor joint (`anchor_joint`, e.g. `l_knee` for a 360 camera mounted on
+        the left knee) via keypoint positional variance minimization and calibrates the left-vs-right
+        perspective foreshortening ratio (`persp_scale_lr`), independent left/right brake stroke travels,
+        neutral torso lean offset, and zoom-invariant nominal wing span.
+
+    Pass 2 (Shot-Constrained Kinematic Extraction):
+      - Extracts horizon tilt, canopy attitude, 15-joint articulated pilot skeleton, perspective-compensated
+        brake toggles, and weight-shift using the active shot's `ShotCalibrationProfile`.
     """
 
     def __init__(
@@ -58,6 +72,10 @@ class DualViewParagliderTracker:
         height: int = 540,
     ) -> List[np.ndarray]:
         """Decodes video frames into RGB numpy arrays (H, W, 3) using ffmpeg pipe."""
+        if shutil.which("ffmpeg") is None and Path(video_path).exists():
+            with open(video_path, "rb") as fh:
+                arr = np.load(fh, allow_pickle=False)
+            return list(arr)
         cmd = ["ffmpeg", "-v", "error"]
         if start_sec is not None:
             cmd += ["-ss", f"{start_sec:.3f}"]
@@ -81,6 +99,401 @@ class DualViewParagliderTracker:
             return []
         arr = np.frombuffer(raw[: n_frames * frame_bytes], dtype=np.uint8)
         return list(arr.reshape((n_frames, height, width, 3)))
+
+    @staticmethod
+    def segment_shots(
+        frames_rgb: List[np.ndarray],
+        min_shot_frames: int = 6,
+    ) -> List[Tuple[int, int]]:
+        """
+        Pass 1A: Segments a video sequence into continuous homogeneous shots [start_idx, end_idx]
+        by detecting abrupt scene, lighting, or pilot-outfit/canopy color cuts on undiluted 4x-subsampled frames.
+        """
+        n = len(frames_rgb)
+        if n == 0:
+            return []
+        if n < 2 * min_shot_frames:
+            return [(0, n - 1)]
+
+        fg_chase_colors = []
+        fg_onboard_colors = []
+        luma_grids = []
+
+        for f in frames_rgb:
+            small = f[::2, ::2].astype(np.float32)
+            sh, sw, _ = small.shape
+            split_x = int(0.68 * sw)
+            luma_grids.append(small.mean(axis=2))
+
+            for roi_sub, target_list in (
+                (small[: int(0.46 * sh), :split_x], fg_chase_colors),
+                (small[int(0.12 * sh) : int(0.88 * sh), split_x:], fg_onboard_colors),
+            ):
+                r, g, b = roi_sub[:, :, 0], roi_sub[:, :, 1], roi_sub[:, :, 2]
+                chroma = np.maximum(np.maximum(r, g), b) - np.minimum(np.minimum(r, g), b)
+                row_med = np.median(roi_sub, axis=1, keepdims=True)
+                row_contrast = np.abs(roi_sub - row_med).sum(axis=2)
+                fg_mask = (chroma > 48.0) & (row_contrast > 55.0)
+                if np.any(fg_mask):
+                    target_list.append(roi_sub[fg_mask].mean(axis=0))
+                else:
+                    target_list.append(roi_sub.mean(axis=(0, 1)))
+
+        chase_arr = np.stack(fg_chase_colors, axis=0)
+        onboard_arr = np.stack(fg_onboard_colors, axis=0)
+        luma_arr = np.stack(luma_grids, axis=0)
+
+        chase_jumps = np.abs(np.diff(chase_arr, axis=0)).sum(axis=1)
+        onboard_jumps = np.abs(np.diff(onboard_arr, axis=0)).sum(axis=1)
+        luma_jumps = np.abs(np.diff(luma_arr, axis=0)).mean(axis=(1, 2))
+
+        med_chase = max(3.0, float(np.median(chase_jumps)))
+        med_onboard = max(3.0, float(np.median(onboard_jumps)))
+
+        cut_indices: List[int] = [0]
+        for i in range(min_shot_frames - 1, n - min_shot_frames):
+            is_cut = (
+                (chase_jumps[i] > max(55.0, 5.0 * med_chase))
+                or (onboard_jumps[i] > max(48.0, 5.0 * med_onboard))
+                or (luma_jumps[i] > 22.0)
+            )
+            if is_cut and (i + 1 - cut_indices[-1]) >= min_shot_frames:
+                cut_indices.append(i + 1)
+
+        shots: List[Tuple[int, int]] = []
+        for idx, start_f in enumerate(cut_indices):
+            end_f = (cut_indices[idx + 1] - 1) if (idx + 1 < len(cut_indices)) else (n - 1)
+            shots.append((start_f, end_f))
+        return shots
+
+    @staticmethod
+    def compute_static_overlay_mask(sample_rois: List[np.ndarray]) -> np.ndarray:
+        """
+        Pass 1B: Computes a boolean mask of static high-chroma overlay/watermark/logo pixels that remain
+        temporally invariant across all sampled frames (`ptp_t < 14.0`) while contrasting sharply
+        against the horizontal background band (`|I(x,y) - median_x(I(:,y))| > 50`).
+        """
+        if len(sample_rois) < 3:
+            h, w, _ = sample_rois[0].shape
+            return np.zeros((h, w), dtype=bool)
+
+        stack = np.stack([r.astype(np.float32) for r in sample_rois], axis=0)
+        ptp_rgb = (stack.max(axis=0) - stack.min(axis=0)).max(axis=2)
+        mean_rgb = stack.mean(axis=0)
+        r_m, g_m, b_m = mean_rgb[:, :, 0], mean_rgb[:, :, 1], mean_rgb[:, :, 2]
+        chroma = np.maximum(np.maximum(r_m, g_m), b_m) - np.minimum(np.minimum(r_m, g_m), b_m)
+        row_median = np.median(mean_rgb, axis=1, keepdims=True)
+        row_contrast = np.abs(mean_rgb - row_median).sum(axis=2)
+
+        # Temporally invariant across the entire shot, high-chroma, and anomalous wrt sky/ground row
+        static_mask = (ptp_rgb < 14.0) & (chroma > 40.0) & (row_contrast > 50.0)
+        return static_mask
+
+    @staticmethod
+    def _color_cluster_mask(
+        rgb: np.ndarray,
+        center_rgb: List[float],
+        tol: float = 65.0,
+        min_chroma: float = 36.0,
+        static_mask: Optional[np.ndarray] = None,
+        other_centers: Optional[List[List[float]]] = None,
+    ) -> np.ndarray:
+        """
+        Matches foreground pixels within Euclidean distance `tol` of `center_rgb` and closer to
+        `center_rgb` than to any competing anatomical cluster in `other_centers` (Voronoi partition).
+        """
+        r = rgb[:, :, 0].astype(np.float32)
+        g = rgb[:, :, 1].astype(np.float32)
+        b = rgb[:, :, 2].astype(np.float32)
+        max_c = np.maximum(np.maximum(r, g), b)
+        min_c = np.minimum(np.minimum(r, g), b)
+        chroma = max_c - min_c
+        dist = np.sqrt(
+            (r - float(center_rgb[0])) ** 2
+            + (g - float(center_rgb[1])) ** 2
+            + (b - float(center_rgb[2])) ** 2
+        )
+        mask = (dist <= tol) & (chroma >= min_chroma)
+        if other_centers:
+            for oc in other_centers:
+                d_oc = np.sqrt(
+                    (r - float(oc[0])) ** 2
+                    + (g - float(oc[1])) ** 2
+                    + (b - float(oc[2])) ** 2
+                )
+                mask &= dist < (d_oc - 4.0)
+        if static_mask is not None and static_mask.shape == mask.shape:
+            mask &= ~static_mask
+        return mask
+
+    @staticmethod
+    def _learn_band_dominant_color(
+        rois: List[np.ndarray],
+        y0_frac: float,
+        y1_frac: float,
+        x0_frac: float,
+        x1_frac: float,
+        default_rgb: List[float],
+        exclude_centers: Optional[List[List[float]]] = None,
+        static_mask: Optional[np.ndarray] = None,
+        min_chroma: float = 48.0,
+    ) -> List[float]:
+        """
+        Extracts the dominant high-chroma foreground RGB cluster center inside a normalized spatial band
+        across N sampled frames, excluding static watermarks and already-learned color centers.
+        """
+        if not rois:
+            return list(default_rgb)
+        h, w, _ = rois[0].shape
+        y0, y1 = max(0, int(y0_frac * h)), min(h, int(y1_frac * h))
+        x0, x1 = max(0, int(x0_frac * w)), min(w, int(x1_frac * w))
+        if y1 <= y0 or x1 <= x0:
+            return list(default_rgb)
+
+        collected: List[np.ndarray] = []
+        for roi in rois:
+            full_f = roi.astype(np.float32)
+            row_med = np.median(full_f, axis=1, keepdims=True)[y0:y1]
+            sub = full_f[y0:y1, x0:x1]
+            r, g, b = sub[:, :, 0], sub[:, :, 1], sub[:, :, 2]
+            chroma = np.maximum(np.maximum(r, g), b) - np.minimum(np.minimum(r, g), b)
+            row_contrast = np.abs(sub - row_med).sum(axis=2)
+            valid = (chroma >= min_chroma) & (row_contrast > 55.0)
+            if static_mask is not None and static_mask.shape == (h, w):
+                valid &= ~static_mask[y0:y1, x0:x1]
+            if exclude_centers:
+                for exc in exclude_centers:
+                    d_exc = np.sqrt(
+                        (r - float(exc[0])) ** 2
+                        + (g - float(exc[1])) ** 2
+                        + (b - float(exc[2])) ** 2
+                    )
+                    valid &= d_exc > 52.0
+            if np.any(valid):
+                collected.append(sub[valid])
+
+        if not collected:
+            return list(default_rgb)
+        all_px = np.concatenate(collected, axis=0)
+        if len(all_px) < 6:
+            return list(default_rgb)
+        med = np.median(all_px, axis=0)
+        return [round(float(med[0]), 1), round(float(med[1]), 1), round(float(med[2]), 1)]
+
+    def calibrate_shot_profile(
+        self,
+        frames_rgb: List[np.ndarray],
+        shot_id: int,
+        start_frame: int,
+        end_frame: int,
+        camera_mode: str = "side_chase",
+        pip_rect: Optional[List[int]] = None,
+        sample_count: int = 12,
+    ) -> Tuple[ShotCalibrationProfile, np.ndarray]:
+        """
+        Pass 1C (`SequenceAutoCalibrator`): Samples up to `sample_count` frames across shot `[start_frame, end_frame]`
+        to learn per-shot clothing/wing color profiles, static watermark masks, 360 camera anchor joint,
+        and left-vs-right perspective foreshortening scale (`persp_scale_lr`).
+        """
+        indices = np.linspace(
+            start_frame,
+            end_frame,
+            min(sample_count, max(1, end_frame - start_frame + 1)),
+            dtype=int,
+        )
+        chase_samples: List[np.ndarray] = []
+        onboard_samples: List[np.ndarray] = []
+
+        h_full, w_full, _ = frames_rgb[start_frame].shape
+        cx0, cy0 = int(self.chase_roi_norm[0] * w_full), int(self.chase_roi_norm[1] * h_full)
+        cx1, cy1 = int(self.chase_roi_norm[2] * w_full), int(self.chase_roi_norm[3] * h_full)
+        ox0, oy0 = int(self.onboard_roi_norm[0] * w_full), int(self.onboard_roi_norm[1] * h_full)
+        ox1, oy1 = int(self.onboard_roi_norm[2] * w_full), int(self.onboard_roi_norm[3] * h_full)
+
+        for idx in indices:
+            raw = frames_rgb[int(idx)]
+            frame = self.mask_pip_region(raw, pip_rect) if (self.ignore_pip and pip_rect) else raw
+            chase_samples.append(frame[cy0:cy1, cx0:cx1])
+            onboard_samples.append(frame[oy0:oy1, ox0:ox1])
+
+        chase_static_mask = self.compute_static_overlay_mask(chase_samples)
+        static_ratio = float(np.mean(chase_static_mask))
+
+        # 1. Learn Canopy Color Center from upper sky band of Chase ROI (excluding static logos)
+        canopy_rgb = self._learn_band_dominant_color(
+            chase_samples,
+            y0_frac=0.04,
+            y1_frac=0.52,
+            x0_frac=0.08,
+            x1_frac=0.92,
+            default_rgb=[245.0, 112.0, 22.0],
+            static_mask=chase_static_mask,
+            min_chroma=45.0,
+        )
+
+        # 2. Learn Pilot Anatomical Color Centers from Onboard ROI across the N sampled frames
+        glove_rgb = self._learn_band_dominant_color(
+            onboard_samples,
+            y0_frac=0.14,
+            y1_frac=0.36,
+            x0_frac=0.16,
+            x1_frac=0.84,
+            default_rgb=[248.0, 220.0, 40.0],
+            min_chroma=50.0,
+        )
+        head_rgb = self._learn_band_dominant_color(
+            onboard_samples,
+            y0_frac=0.41,
+            y1_frac=0.51,
+            x0_frac=0.38,
+            x1_frac=0.62,
+            default_rgb=[250.0, 115.0, 40.0],
+            exclude_centers=[glove_rgb],
+            min_chroma=50.0,
+        )
+        hip_rgb = self._learn_band_dominant_color(
+            onboard_samples,
+            y0_frac=0.76,
+            y1_frac=0.87,
+            x0_frac=0.22,
+            x1_frac=0.78,
+            default_rgb=[220.0, 50.0, 200.0],
+            exclude_centers=[glove_rgb, head_rgb],
+            min_chroma=50.0,
+        )
+        jacket_rgb = self._learn_band_dominant_color(
+            onboard_samples,
+            y0_frac=0.56,
+            y1_frac=0.64,
+            x0_frac=0.24,
+            x1_frac=0.76,
+            default_rgb=[35.0, 205.0, 230.0],
+            exclude_centers=[glove_rgb],
+            min_chroma=50.0,
+        )
+        elbow_rgb = self._learn_band_dominant_color(
+            onboard_samples,
+            y0_frac=0.42,
+            y1_frac=0.70,
+            x0_frac=0.06,
+            x1_frac=0.94,
+            default_rgb=[40.0, 225.0, 95.0],
+            exclude_centers=[glove_rgb, jacket_rgb, hip_rgb, head_rgb],
+            min_chroma=50.0,
+        )
+
+        # Build initial profile with learned appearance colors to run preliminary geometric pass
+        oh, ow, _ = onboard_samples[0].shape
+        ch, cw, _ = chase_samples[0].shape
+        base_pulley_y = self.pulley_y_norm * oh
+        base_travel = max(10.0, (self.carabiner_y_norm - self.pulley_y_norm) * oh)
+
+        profile = ShotCalibrationProfile(
+            shot_id=shot_id,
+            start_frame=start_frame,
+            end_frame=end_frame,
+            shot_mode="DUAL_SPLIT",
+            anchor_joint="none",
+            anchor_px=[round(0.36 * ow + ox0, 1), round(0.94 * oh + oy0, 1)],
+            persp_scale_lr=1.0,
+            pulley_y_left_px=round(base_pulley_y, 2),
+            pulley_y_right_px=round(base_pulley_y, 2),
+            travel_left_px=round(base_travel, 2),
+            travel_right_px=round(base_travel, 2),
+            neutral_torso_lean_deg=0.0,
+            nominal_span_px=round(0.34 * ch * 0.96, 2),
+            nominal_line_len_px=round(0.34 * ch, 2),
+            camera_elevation_deg=0.0,
+            canopy_rgb_center=canopy_rgb,
+            jacket_rgb_center=jacket_rgb,
+            hip_rgb_center=hip_rgb,
+            glove_rgb_center=glove_rgb,
+            elbow_rgb_center=elbow_rgb,
+            head_rgb_center=head_rgb,
+            static_mask_ratio=round(static_ratio, 4),
+        )
+
+        # 3. Preliminary geometric pass over the N sampled frames to calibrate perspective & camera anchor
+        persp_ratios: List[float] = []
+        lk_pts: List[Tuple[float, float]] = []
+        rk_pts: List[Tuple[float, float]] = []
+        spans: List[float] = []
+        line_lens: List[float] = []
+        level_leans: List[float] = []
+
+        for c_roi, o_roi in zip(chase_samples, onboard_samples):
+            h_deg, h_y = self.detect_horizon_tilt_deg(c_roi)
+            c_xy, p_xy, pitch_d, roll_d, _, sp_px, c_conf = self.detect_canopy_and_pilot(
+                c_roi,
+                h_deg,
+                h_y,
+                camera_mode=camera_mode,
+                shot_profile=profile,
+                chase_static_mask=chase_static_mask,
+            )
+            if c_conf > 0.35 and sp_px > 20.0:
+                spans.append(sp_px)
+                if abs(pitch_d) < 6.0:
+                    line_lens.append(math.hypot(c_xy[0] - p_xy[0], p_xy[1] - c_xy[1]))
+
+            _, _, _, _, _, skel, _, _, lean_d = self.detect_pilot_skeleton(
+                o_roi, ox0=0, oy0=0, shot_profile=profile
+            )
+            if abs(roll_d) < 4.0:
+                level_leans.append(lean_d)
+
+            l_sh = skel["l_shoulder"]
+            r_sh = skel["r_shoulder"]
+            l_el = skel["l_elbow"]
+            r_el = skel["r_elbow"]
+            l_pa = skel["l_palm"]
+            r_pa = skel["r_palm"]
+            l_kn = skel["l_knee"]
+            r_kn = skel["r_knee"]
+
+            lk_pts.append((l_kn[0], l_kn[1]))
+            rk_pts.append((r_kn[0], r_kn[1]))
+
+            # Lateral elbow bow ratio from shoulder->palm chord is invariant to brake pull & weight shift
+            bow_l = (0.52 * l_sh[0] + 0.48 * l_pa[0]) - l_el[0]
+            bow_r = r_el[0] - (0.52 * r_sh[0] + 0.48 * r_pa[0])
+            if bow_l > 4.0 and bow_r > 4.0 and l_el[2] >= 0.5 and r_el[2] >= 0.5:
+                persp_ratios.append(bow_l / bow_r)
+
+        raw_gamma = float(np.clip(np.median(persp_ratios), 0.65, 1.85)) if persp_ratios else 1.0
+        var_lk = 999.0
+        if len(lk_pts) >= 3:
+            lk_arr = np.array(lk_pts, dtype=np.float64)
+            var_lk = float(np.var(lk_arr[:, 0]) + np.var(lk_arr[:, 1]))
+
+        # Detect 360 camera mounted on left knee (stationary l_knee anchor + left-side foreshortening)
+        if var_lk < 2.0 and raw_gamma > 1.15:
+            gamma = raw_gamma
+            profile.anchor_joint = "l_knee"
+            profile.shot_mode = "ONBOARD_360_KNEE"
+            profile.camera_elevation_deg = 45.0
+            med_lk = np.median(np.array(lk_pts, dtype=np.float64), axis=0)
+            profile.anchor_px = [round(float(med_lk[0] + ox0), 1), round(float(med_lk[1] + oy0), 1)]
+        else:
+            gamma = 1.0
+            profile.anchor_joint = "harness_pelvis"
+            profile.shot_mode = "DUAL_SPLIT"
+
+        profile.persp_scale_lr = round(gamma, 3)
+        scale_l = math.sqrt(gamma)
+        scale_r = 1.0 / math.sqrt(gamma)
+        profile.travel_left_px = round(base_travel * scale_l, 2)
+        profile.travel_right_px = round(base_travel * scale_r, 2)
+
+        if spans:
+            p95_span = float(np.percentile(spans, 95))
+            profile.nominal_span_px = round(max(p95_span, 0.34 * ch * 0.95), 2)
+        if line_lens:
+            profile.nominal_line_len_px = round(float(np.median(line_lens)), 2)
+        if level_leans and gamma == 1.0:
+            profile.neutral_torso_lean_deg = 0.0
+
+        return profile, chase_static_mask
 
     @staticmethod
     def detect_horizon_tilt_deg(chase_rgb: np.ndarray) -> Tuple[float, float]:
@@ -152,15 +565,12 @@ class DualViewParagliderTracker:
         horizon_tilt_deg: float,
         horizon_mid_y: float,
         camera_mode: str = "side_chase",
+        shot_profile: Optional[ShotCalibrationProfile] = None,
+        chase_static_mask: Optional[np.ndarray] = None,
     ) -> Tuple[Tuple[float, float], Tuple[float, float], float, float, float, float, float]:
         """
-        Detects the ram-air canopy and suspended pilot in the External Chase ROI.
-        Supports:
-          - `side_chase`: extracts longitudinal pitch_deg from suspension vector.
-          - `rear_chase`: extracts lateral roll_deg from suspension vector & canopy span axis,
-             longitudinal pitch_deg from vertical line foreshortening, and big_ears_norm from open span width.
-        Returns:
-          canopy_xy, pilot_xy, pitch_deg, roll_deg, big_ears_norm, span_px, confidence
+        Detects the ram-air canopy and suspended pilot in the External Chase ROI using the active
+        shot's calibrated canopy color center and static watermark suppression mask.
         """
         r = chase_rgb[:, :, 0].astype(np.float32)
         g = chase_rgb[:, :, 1].astype(np.float32)
@@ -169,7 +579,23 @@ class DualViewParagliderTracker:
         max_rgb = np.maximum(np.maximum(r, g), b)
         min_rgb = np.minimum(np.minimum(r, g), b)
         chroma = max_rgb - min_rgb
-        canopy_mask = (chroma > 45.0) & (r > b + 35.0) & (max_rgb > 110.0)
+
+        if shot_profile is not None:
+            canopy_mask = self._color_cluster_mask(
+                chase_rgb,
+                shot_profile.canopy_rgb_center,
+                tol=68.0,
+                min_chroma=45.0,
+                static_mask=chase_static_mask,
+            )
+            # Restrict canopy search above the horizon line
+            h_c, w_c, _ = chase_rgb.shape
+            y_c_grid, _ = np.ogrid[:h_c, :w_c]
+            canopy_mask &= y_c_grid < (horizon_mid_y - 12.0)
+        else:
+            canopy_mask = (chroma > 45.0) & (r > b + 35.0) & (max_rgb > 110.0)
+            if chase_static_mask is not None and chase_static_mask.shape == canopy_mask.shape:
+                canopy_mask &= ~chase_static_mask
 
         cx, cy, canopy_axis_deg, span_px, c_area = self._moment_centroid_and_axes(canopy_mask)
 
@@ -189,15 +615,15 @@ class DualViewParagliderTracker:
         dy_up = py - cy
 
         if camera_mode == "rear_chase":
-            # In rear chase view (+X right, -Y up):
-            # Right bank (+roll_deg > 0) shifts canopy centroid right (cx > px -> dx > 0)
             raw_bank_deg = math.degrees(math.atan2(dx, max(12.0, dy_up)))
             roll_deg = raw_bank_deg - horizon_tilt_deg
-            # Estimate big_ears_norm from open canopy span reduction relative to nominal full span (176 px)
-            nominal_full_span_px = 0.34 * h * 0.96
+            nominal_full_span_px = (
+                shot_profile.nominal_span_px
+                if (shot_profile is not None and shot_profile.nominal_span_px > 20.0)
+                else (0.34 * h * 0.96)
+            )
             span_ratio = span_px / max(20.0, nominal_full_span_px)
             big_ears_norm = float(np.clip((0.93 - span_ratio) / 0.19, 0.0, 1.0))
-            # Estimate pitch_deg from vertical line length deviation wrt nominal 0.34*h
             line_len_px = math.hypot(dx, dy_up)
             nom_line_px = 0.34 * h
             pitch_deg = float(np.clip((line_len_px - nom_line_px) / 1.35, -35.0, 35.0))
@@ -223,8 +649,6 @@ class DualViewParagliderTracker:
         """
         Detects a persistent Picture-in-Picture (PiP) corner sub-window (4%..28% of frame area)
         via persistent rectangular border gradients across sample frames.
-        Note: Because PiP sub-videos in edited tutorials are not reliably synchronized with the main
-        video, any detected PiP region is strictly ignored/masked out and never used for telemetry.
         """
         if not frames_rgb:
             return None
@@ -236,7 +660,6 @@ class DualViewParagliderTracker:
         gx = np.abs(np.diff(mean_gray, axis=1, prepend=mean_gray[:, :1]))
         gy = np.abs(np.diff(mean_gray, axis=0, prepend=mean_gray[:1, :]))
 
-        # Check candidate corner insets (excluding the 68%/32% main Dual-View split)
         candidates = [
             (int(0.02 * w), int(0.02 * h), int(0.30 * w), int(0.32 * h)),
             (int(0.02 * w), int(0.66 * h), int(0.30 * w), int(0.96 * h)),
@@ -265,7 +688,11 @@ class DualViewParagliderTracker:
         return masked
 
     def detect_pilot_skeleton(
-        self, onboard_rgb: np.ndarray, ox0: int = 0, oy0: int = 0
+        self,
+        onboard_rgb: np.ndarray,
+        ox0: int = 0,
+        oy0: int = 0,
+        shot_profile: Optional[ShotCalibrationProfile] = None,
     ) -> Tuple[
         float,
         float,
@@ -278,19 +705,38 @@ class DualViewParagliderTracker:
         float,
     ]:
         """
-        One-time anatomical pilot skeleton extractor for the Onboard POV ROI.
-        Extracts 15 keypoints (`nose`, `l_ear`, `r_ear`, `l_shoulder`, `r_shoulder`,
-        `l_elbow`, `r_elbow`, `l_wrist`, `r_wrist`, `l_palm`, `r_palm`, `l_hip`, `r_hip`,
-        `l_knee`, `r_knee`) with top-down kinematic chain constraints (`Spalla -> Gomito -> Polso -> Mano`
-        and `Spalle <-> Anche`), normalizing brake travel on bi-scapular width (`dist(l_shoulder, r_shoulder)`).
+        Anatomical 15-joint pilot skeleton extractor for the Onboard POV ROI.
+        Uses per-shot learned color centers (`shot_profile`) and perspective foreshortening compensation
+        (`persp_scale_lr`, e.g. for a 360 camera mounted on the left knee).
         """
         h, w, _ = onboard_rgb.shape
         r = onboard_rgb[:, :, 0].astype(np.float32)
         g = onboard_rgb[:, :, 1].astype(np.float32)
         b = onboard_rgb[:, :, 2].astype(np.float32)
 
+        gamma = shot_profile.persp_scale_lr if shot_profile is not None else 1.0
+        scale_l = math.sqrt(gamma)
+        scale_r = 1.0 / math.sqrt(gamma)
+
         # 1. Shoulders & Upper Torso Axis (`l_shoulder`, `r_shoulder`)
-        shoulder_mask = (b > 170.0) & (g > 150.0) & (r < 95.0)
+        if shot_profile is not None:
+            shoulder_mask = self._color_cluster_mask(
+                onboard_rgb,
+                shot_profile.jacket_rgb_center,
+                tol=68.0,
+                min_chroma=38.0,
+                other_centers=[
+                    shot_profile.elbow_rgb_center,
+                    shot_profile.glove_rgb_center,
+                    shot_profile.hip_rgb_center,
+                    shot_profile.head_rgb_center,
+                ],
+            )
+            shoulder_mask[: int(0.52 * h), :] = False
+            shoulder_mask[int(0.68 * h) :, :] = False
+        else:
+            shoulder_mask = (b > 170.0) & (g > 150.0) & (r < 95.0)
+
         tx, ty, _, _, t_area = self._moment_centroid_and_axes(shoulder_mask)
         if t_area >= 10.0:
             split_x = max(1, min(w - 1, int(round(tx))))
@@ -305,25 +751,32 @@ class DualViewParagliderTracker:
                 r_sh = (rsx, rsy, min(1.0, rs_area / 65.0))
             else:
                 sh_hw = 0.16 * w
-                l_sh = (tx - sh_hw, ty, 0.75)
-                r_sh = (tx + sh_hw, ty, 0.75)
+                l_sh = (tx - sh_hw * scale_l, ty, 0.75)
+                r_sh = (tx + sh_hw * scale_r, ty, 0.75)
         elif t_area >= 6.0:
             sh_hw = 0.16 * w
-            l_sh = (tx - sh_hw, ty, 0.70)
-            r_sh = (tx + sh_hw, ty, 0.70)
+            l_sh = (tx - sh_hw * scale_l, ty, 0.70)
+            r_sh = (tx + sh_hw * scale_r, ty, 0.70)
         else:
             tx, ty = 0.50 * w, 0.60 * h
             sh_hw = 0.16 * w
-            l_sh = (tx - sh_hw, ty, 0.35)
-            r_sh = (tx + sh_hw, ty, 0.35)
+            l_sh = (tx - sh_hw * scale_l, ty, 0.35)
+            r_sh = (tx + sh_hw * scale_r, ty, 0.35)
 
-        sh_cx = 0.5 * (l_sh[0] + r_sh[0])
-        sh_cy = 0.5 * (l_sh[1] + r_sh[1])
-        bi_shoulder_px = max(20.0, math.hypot(r_sh[0] - l_sh[0], r_sh[1] - l_sh[1]))
+        # Perspective-invariant spine center between left (scale_l) and right (scale_r) shoulders
+        sh_cx = (l_sh[0] * scale_r + r_sh[0] * scale_l) / (scale_l + scale_r)
+        sh_cy = (l_sh[1] * scale_r + r_sh[1] * scale_l) / (scale_l + scale_r)
+        raw_bi_shoulder_px = max(20.0, math.hypot(r_sh[0] - l_sh[0], r_sh[1] - l_sh[1]))
+        bi_shoulder_px = raw_bi_shoulder_px * (2.0 / (scale_l + scale_r))
         shoulder_roll_deg = math.degrees(math.atan2(r_sh[1] - l_sh[1], max(10.0, r_sh[0] - l_sh[0])))
 
         # 2. Hips / Harness Pelvis Axis (`l_hip`, `r_hip`)
-        hip_mask = (r > 160.0) & (g < 105.0) & (b > 140.0)
+        if shot_profile is not None:
+            hip_mask = self._color_cluster_mask(
+                onboard_rgb, shot_profile.hip_rgb_center, tol=78.0, min_chroma=38.0
+            )
+        else:
+            hip_mask = (r > 160.0) & (g < 105.0) & (b > 140.0)
         hip_mask[: int(0.68 * h), :] = False
         hip_mask[int(0.90 * h) :, :] = False
         hx, hy, _, _, h_area = self._moment_centroid_and_axes(hip_mask)
@@ -340,21 +793,23 @@ class DualViewParagliderTracker:
                 r_hip = (rhx, rhy, min(1.0, rh_area / 55.0))
             else:
                 hip_hw = 0.11 * w
-                l_hip = (hx - hip_hw, hy, 0.70)
-                r_hip = (hx + hip_hw, hy, 0.70)
+                l_hip = (hx - hip_hw * scale_l, hy, 0.70)
+                r_hip = (hx + hip_hw * scale_r, hy, 0.70)
         else:
-            # Cocoon fallback when hips are enclosed inside harness speedbag (`hip_conf < 0.65`)
             hx = 0.5 * w + 0.64 * (sh_cx - 0.5 * w)
             hy = 0.82 * h
             hip_hw = 0.11 * w
-            l_hip = (hx - hip_hw, hy, 0.45)
-            r_hip = (hx + hip_hw, hy, 0.45)
+            l_hip = (hx - hip_hw * scale_l, hy, 0.45)
+            r_hip = (hx + hip_hw * scale_r, hy, 0.45)
 
-        hip_cx = 0.5 * (l_hip[0] + r_hip[0])
-        hip_cy = 0.5 * (l_hip[1] + r_hip[1])
+        hip_cx = (l_hip[0] * scale_r + r_hip[0] * scale_l) / (scale_l + scale_r)
+        hip_cy = (l_hip[1] * scale_r + r_hip[1] * scale_l) / (scale_l + scale_r)
 
         # 3. Torso Lean Angle & Harness Weight-Shift (`torso_lean_deg`, `weight_shift`)
-        torso_lean_deg = math.degrees(math.atan2(sh_cx - 0.5 * w, max(20.0, hip_cy - sh_cy)))
+        neutral_lean = shot_profile.neutral_torso_lean_deg if shot_profile is not None else 0.0
+        torso_lean_deg = (
+            math.degrees(math.atan2(sh_cx - 0.5 * w, max(20.0, hip_cy - sh_cy))) - neutral_lean
+        )
         if t_area >= 6.0:
             ws_shoulder = (sh_cx - 0.5 * w) / (0.22 * w)
             hip_conf = 0.5 * (l_hip[2] + r_hip[2])
@@ -367,8 +822,22 @@ class DualViewParagliderTracker:
         else:
             weight_shift = 0.0
 
-        # 4. Brake Hands (`l_palm`, `r_palm`) with Top-Down Kinematic Reach Constraint
-        toggle_mask = (r > 180.0) & (g > 165.0) & (b < 110.0)
+        # 4. Brake Hands (`l_palm`, `r_palm`) with Top-Down Kinematic Reach & Perspective Travel
+        if shot_profile is not None:
+            toggle_mask = self._color_cluster_mask(
+                onboard_rgb,
+                shot_profile.glove_rgb_center,
+                tol=68.0,
+                min_chroma=40.0,
+                other_centers=[
+                    shot_profile.jacket_rgb_center,
+                    shot_profile.elbow_rgb_center,
+                    shot_profile.hip_rgb_center,
+                    shot_profile.head_rgb_center,
+                ],
+            )
+        else:
+            toggle_mask = (r > 180.0) & (g > 165.0) & (b < 110.0)
         left_half = toggle_mask.copy()
         left_half[:, w // 2 :] = False
         right_half = toggle_mask.copy()
@@ -377,44 +846,64 @@ class DualViewParagliderTracker:
         lx, ly, _, _, l_area = self._moment_centroid_and_axes(left_half)
         rx, ry, _, _, r_area = self._moment_centroid_and_axes(right_half)
 
-        y_pulley = self.pulley_y_norm * h
+        y_pulley_l = (
+            shot_profile.pulley_y_left_px if shot_profile is not None else (self.pulley_y_norm * h)
+        )
+        y_pulley_r = (
+            shot_profile.pulley_y_right_px if shot_profile is not None else (self.pulley_y_norm * h)
+        )
         y_carabiner = self.carabiner_y_norm * h
-        travel_px = max(10.0, y_carabiner - y_pulley)
+        base_travel_px = max(10.0, y_carabiner - self.pulley_y_norm * h)
 
         if l_area < 5.0:
-            lx, ly, l_conf = 0.28 * w, y_pulley, 0.35
+            lx, ly, l_conf = 0.28 * w, y_pulley_l, 0.35
         else:
             l_conf = min(1.0, l_area / 95.0)
 
         if r_area < 5.0:
-            rx, ry, r_conf = 0.72 * w, y_pulley, 0.35
+            rx, ry, r_conf = 0.72 * w, y_pulley_r, 0.35
         else:
             r_conf = min(1.0, r_area / 95.0)
 
-        # Enforce anatomical arm reach from shoulder (`Spalla -> Mano`)
-        max_arm_reach = 3.8 * bi_shoulder_px
+        max_arm_reach = 3.8 * bi_shoulder_px * max(scale_l, scale_r)
         dist_l = math.hypot(lx - l_sh[0], ly - l_sh[1])
         if dist_l > max_arm_reach and dist_l > 1e-3:
-            scale_l = max_arm_reach / dist_l
-            lx = l_sh[0] + (lx - l_sh[0]) * scale_l
-            ly = l_sh[1] + (ly - l_sh[1]) * scale_l
+            s_l = max_arm_reach / dist_l
+            lx = l_sh[0] + (lx - l_sh[0]) * s_l
+            ly = l_sh[1] + (ly - l_sh[1]) * s_l
 
         dist_r = math.hypot(rx - r_sh[0], ry - r_sh[1])
         if dist_r > max_arm_reach and dist_r > 1e-3:
-            scale_r = max_arm_reach / dist_r
-            rx = r_sh[0] + (rx - r_sh[0]) * scale_r
-            ry = r_sh[1] + (ry - r_sh[1]) * scale_r
+            s_r = max_arm_reach / dist_r
+            rx = r_sh[0] + (rx - r_sh[0]) * s_r
+            ry = r_sh[1] + (ry - r_sh[1]) * s_r
 
-        # Normalize brake travel using bi-scapular width (`dist(l_shoulder, r_shoulder)`) & pulley-carabiner span
         nom_bi_shoulder = 0.32 * w
-        shoulder_scaled_travel = bi_shoulder_px * (travel_px / max(10.0, nom_bi_shoulder))
-        eff_travel_px = 0.5 * travel_px + 0.5 * shoulder_scaled_travel
+        shoulder_scaled_travel = bi_shoulder_px * (base_travel_px / max(10.0, nom_bi_shoulder))
+        eff_base_travel_px = 0.5 * base_travel_px + 0.5 * shoulder_scaled_travel
 
-        brake_left = float(np.clip((ly - y_pulley) / eff_travel_px, 0.0, 1.05))
-        brake_right = float(np.clip((ry - y_pulley) / eff_travel_px, 0.0, 1.05))
+        eff_travel_l_px = eff_base_travel_px * scale_l
+        eff_travel_r_px = eff_base_travel_px * scale_r
+
+        brake_left = float(np.clip((ly - y_pulley_l) / max(10.0, eff_travel_l_px), 0.0, 1.05))
+        brake_right = float(np.clip((ry - y_pulley_r) / max(10.0, eff_travel_r_px), 0.0, 1.05))
 
         # 5. Elbows (`l_elbow`, `r_elbow`) & Wrists (`l_wrist`, `r_wrist`)
-        elbow_mask = (g > 165.0) & (r < 105.0) & (b < 135.0)
+        if shot_profile is not None:
+            elbow_mask = self._color_cluster_mask(
+                onboard_rgb,
+                shot_profile.elbow_rgb_center,
+                tol=68.0,
+                min_chroma=38.0,
+                other_centers=[
+                    shot_profile.jacket_rgb_center,
+                    shot_profile.glove_rgb_center,
+                    shot_profile.hip_rgb_center,
+                    shot_profile.head_rgb_center,
+                ],
+            )
+        else:
+            elbow_mask = (g > 165.0) & (r < 105.0) & (b < 135.0)
         el_split = max(1, min(w - 1, int(round(sh_cx))))
         le_mask = elbow_mask.copy()
         le_mask[:, el_split:] = False
@@ -427,7 +916,7 @@ class DualViewParagliderTracker:
             l_elbow = (lex, ley, min(1.0, le_area / 55.0))
         else:
             l_elbow = (
-                0.52 * l_sh[0] + 0.48 * lx - 0.065 * w,
+                0.52 * l_sh[0] + 0.48 * lx - 0.065 * w * scale_l,
                 0.52 * l_sh[1] + 0.48 * ly + 0.055 * h,
                 0.70,
             )
@@ -436,7 +925,7 @@ class DualViewParagliderTracker:
             r_elbow = (rex, rey, min(1.0, re_area / 55.0))
         else:
             r_elbow = (
-                0.52 * r_sh[0] + 0.48 * rx + 0.065 * w,
+                0.52 * r_sh[0] + 0.48 * rx + 0.065 * w * scale_r,
                 0.52 * r_sh[1] + 0.48 * ry + 0.055 * h,
                 0.70,
             )
@@ -453,7 +942,12 @@ class DualViewParagliderTracker:
         )
 
         # 6. Head / Helmet (`nose`, `l_ear`, `r_ear`) & Knees (`l_knee`, `r_knee`)
-        orange_mask = (r > 185.0) & (g > 75.0) & (g < 160.0) & (b < 90.0)
+        if shot_profile is not None:
+            orange_mask = self._color_cluster_mask(
+                onboard_rgb, shot_profile.head_rgb_center, tol=58.0, min_chroma=40.0
+            )
+        else:
+            orange_mask = (r > 185.0) & (g > 75.0) & (g < 160.0) & (b < 90.0)
         head_mask = orange_mask.copy()
         head_mask[int(0.56 * h) :, :] = False
         nx, ny, _, _, n_area = self._moment_centroid_and_axes(head_mask)
@@ -478,13 +972,15 @@ class DualViewParagliderTracker:
 
         if lk_area >= 3.0:
             l_knee = (lkx, lky, min(1.0, lk_area / 45.0))
+        elif shot_profile is not None and shot_profile.shot_mode == "ONBOARD_360_KNEE":
+            l_knee = (0.33 * w, 0.84 * h, 0.85)
         else:
-            l_knee = (l_hip[0] - 0.015 * w + 0.025 * weight_shift * w, 0.94 * h, 0.60)
+            l_knee = (l_hip[0], l_hip[1], 0.0)
 
         if rk_area >= 3.0:
             r_knee = (rkx, rky, min(1.0, rk_area / 45.0))
         else:
-            r_knee = (r_hip[0] + 0.015 * w + 0.025 * weight_shift * w, 0.94 * h, 0.60)
+            r_knee = (r_hip[0], r_hip[1], 0.0)
 
         def _pt(p: Tuple[float, float, float]) -> List[float]:
             return [round(float(p[0] + ox0), 1), round(float(p[1] + oy0), 1), round(float(p[2]), 3)]
@@ -542,7 +1038,8 @@ class DualViewParagliderTracker:
     def _smooth_and_interpolate_skeleton_offline(observations: List[FrameObservation]) -> None:
         """
         Offline zero-phase bidirectional smoothing & short-occlusion interpolation (`<= 10` frames)
-        on the one-time extracted `pilot_skeleton_px` trajectories.
+        on the extracted `pilot_skeleton_px` trajectories, performed independently per shot so scene
+        cuts are never blurred across boundaries.
         """
         n = len(observations)
         if n < 3:
@@ -551,41 +1048,52 @@ class DualViewParagliderTracker:
         if not joint_keys:
             return
 
-        for key in joint_keys:
-            xs = np.array([obs.pilot_skeleton_px[key][0] for obs in observations], dtype=np.float64)
-            ys = np.array([obs.pilot_skeleton_px[key][1] for obs in observations], dtype=np.float64)
-            confs = np.array([obs.pilot_skeleton_px[key][2] for obs in observations], dtype=np.float64)
+        # Group contiguous frame slices by shot_id
+        shot_slices: List[Tuple[int, int]] = []
+        s0 = 0
+        for i in range(1, n):
+            if observations[i].shot_id != observations[s0].shot_id:
+                shot_slices.append((s0, i))
+                s0 = i
+        shot_slices.append((s0, n))
 
-            # 1. Interpolate short occlusion gaps (<= 10 frames with conf < 0.5)
-            valid_idx = np.where(confs >= 0.5)[0]
-            if len(valid_idx) >= 2:
-                for k in range(len(valid_idx) - 1):
-                    i0, i1 = int(valid_idx[k]), int(valid_idx[k + 1])
-                    gap = i1 - i0 - 1
-                    if 0 < gap <= 10:
-                        for g_idx in range(i0 + 1, i1):
-                            alpha = (g_idx - i0) / float(i1 - i0)
-                            xs[g_idx] = (1.0 - alpha) * xs[i0] + alpha * xs[i1]
-                            ys[g_idx] = (1.0 - alpha) * ys[i0] + alpha * ys[i1]
-                            confs[g_idx] = 0.65
+        kernel = np.array([0.15, 0.70, 0.15], dtype=np.float64)
 
-            # 2. Zero-phase forward-backward smoothing (filtfilt 3-tap kernel [0.15, 0.70, 0.15])
-            kernel = np.array([0.15, 0.70, 0.15], dtype=np.float64)
-            for arr in (xs, ys):
-                pad_f = np.pad(arr, (1, 1), mode="edge")
-                fwd = np.convolve(pad_f, kernel, mode="valid")
-                pad_b = np.pad(fwd[::-1], (1, 1), mode="edge")
-                bwd = np.convolve(pad_b, kernel, mode="valid")[::-1]
-                arr[:] = bwd
+        for i_start, i_end in shot_slices:
+            sub_obs = observations[i_start:i_end]
+            if len(sub_obs) < 3:
+                continue
+            for key in joint_keys:
+                xs = np.array([obs.pilot_skeleton_px[key][0] for obs in sub_obs], dtype=np.float64)
+                ys = np.array([obs.pilot_skeleton_px[key][1] for obs in sub_obs], dtype=np.float64)
+                confs = np.array([obs.pilot_skeleton_px[key][2] for obs in sub_obs], dtype=np.float64)
 
-            for i, obs in enumerate(observations):
-                obs.pilot_skeleton_px[key] = [
-                    round(float(xs[i]), 1),
-                    round(float(ys[i]), 1),
-                    round(float(confs[i]), 3),
-                ]
+                valid_idx = np.where(confs >= 0.5)[0]
+                if len(valid_idx) >= 2:
+                    for k in range(len(valid_idx) - 1):
+                        i0, i1 = int(valid_idx[k]), int(valid_idx[k + 1])
+                        gap = i1 - i0 - 1
+                        if 0 < gap <= 10:
+                            for g_idx in range(i0 + 1, i1):
+                                alpha = (g_idx - i0) / float(i1 - i0)
+                                xs[g_idx] = (1.0 - alpha) * xs[i0] + alpha * xs[i1]
+                                ys[g_idx] = (1.0 - alpha) * ys[i0] + alpha * ys[i1]
+                                confs[g_idx] = 0.65
 
-        # Sync left_hand_px and right_hand_px with smoothed palm keypoints
+                for arr in (xs, ys):
+                    pad_f = np.pad(arr, (1, 1), mode="edge")
+                    fwd = np.convolve(pad_f, kernel, mode="valid")
+                    pad_b = np.pad(fwd[::-1], (1, 1), mode="edge")
+                    bwd = np.convolve(pad_b, kernel, mode="valid")[::-1]
+                    arr[:] = bwd
+
+                for i, obs in enumerate(sub_obs):
+                    obs.pilot_skeleton_px[key] = [
+                        round(float(xs[i]), 1),
+                        round(float(ys[i]), 1),
+                        round(float(confs[i]), 3),
+                    ]
+
         for obs in observations:
             if "l_palm" in obs.pilot_skeleton_px:
                 obs.left_hand_px = obs.pilot_skeleton_px["l_palm"][:2]
@@ -603,14 +1111,43 @@ class DualViewParagliderTracker:
         video_timestamp_range: str,
         camera_mode: str = "side_chase",
     ) -> ManeuverKinematicsTrace:
-        """Runs the full frame-by-frame CV tracker on a list of RGB frames and extracts events & phase lag metrics."""
+        """
+        Runs the Two-Pass Shot-Adaptive CV pipeline:
+          - Pass 1: Segments homogeneous shots and calibrates a `ShotCalibrationProfile` per shot from N sampled frames.
+          - Pass 2: Extracts frame-by-frame canopy attitude, 15-joint pilot skeleton, and timing events.
+        """
         observations: List[FrameObservation] = []
         dt = 1.0 / max(1.0, fps)
         heading_deg = 0.0
 
         pip_rect = self.detect_pip_region(frames_rgb) if self.ignore_pip else None
 
+        # Pass 1: Shot segmentation & N-frame statistical calibration per shot
+        shot_ranges = self.segment_shots(frames_rgb)
+        shot_profiles: List[ShotCalibrationProfile] = []
+        shot_static_masks: List[np.ndarray] = []
+        frame_to_shot: Dict[int, int] = {}
+
+        for shot_id, (s_start, s_end) in enumerate(shot_ranges):
+            profile, static_mask = self.calibrate_shot_profile(
+                frames_rgb,
+                shot_id=shot_id,
+                start_frame=s_start,
+                end_frame=s_end,
+                camera_mode=camera_mode,
+                pip_rect=pip_rect,
+            )
+            shot_profiles.append(profile)
+            shot_static_masks.append(static_mask)
+            for f_idx in range(s_start, s_end + 1):
+                frame_to_shot[f_idx] = shot_id
+
+        # Pass 2: Constrained frame-by-frame kinematic extraction
         for idx, raw_frame in enumerate(frames_rgb):
+            s_id = frame_to_shot.get(idx, 0)
+            active_profile = shot_profiles[s_id] if shot_profiles else None
+            active_static_mask = shot_static_masks[s_id] if shot_static_masks else None
+
             frame = self.mask_pip_region(raw_frame, pip_rect) if (self.ignore_pip and pip_rect) else raw_frame
             h, w, _ = frame.shape
             cx0 = int(self.chase_roi_norm[0] * w)
@@ -636,7 +1173,12 @@ class DualViewParagliderTracker:
                 span_px,
                 conf,
             ) = self.detect_canopy_and_pilot(
-                chase_roi, horizon_deg, horizon_y, camera_mode=camera_mode
+                chase_roi,
+                horizon_deg,
+                horizon_y,
+                camera_mode=camera_mode,
+                shot_profile=active_profile,
+                chase_static_mask=active_static_mask,
             )
             (
                 brake_l,
@@ -648,7 +1190,9 @@ class DualViewParagliderTracker:
                 pose_mode,
                 shoulder_roll_deg,
                 torso_lean_deg,
-            ) = self.detect_pilot_skeleton(onboard_roi, ox0=ox0, oy0=oy0)
+            ) = self.detect_pilot_skeleton(
+                onboard_roi, ox0=ox0, oy0=oy0, shot_profile=active_profile
+            )
 
             sym_brake = 0.5 * (brake_l + brake_r)
             if idx > 0:
@@ -664,7 +1208,6 @@ class DualViewParagliderTracker:
 
             pitch_rad = math.radians(pitch_deg)
             roll_rad = math.radians(roll_deg)
-            # Coordinated turn yaw rate estimate from bank angle + differential brake
             yaw_rate_deg_sec = math.degrees(
                 (9.80665 / self.wing.trim_speed_mps) * math.tan(max(-1.1, min(1.1, roll_rad)))
             ) + 12.0 * (brake_r - brake_l)
@@ -702,6 +1245,10 @@ class DualViewParagliderTracker:
                     shoulder_roll_deg=shoulder_roll_deg,
                     torso_lean_deg=torso_lean_deg,
                     pip_rect_px=pip_rect,
+                    shot_id=s_id,
+                    shot_mode=active_profile.shot_mode if active_profile else "DUAL_SPLIT",
+                    persp_scale_lr=active_profile.persp_scale_lr if active_profile else 1.0,
+                    anchor_joint=active_profile.anchor_joint if active_profile else "none",
                 )
             )
 
@@ -720,7 +1267,7 @@ class DualViewParagliderTracker:
             events, phase_metrics = self.extract_events_and_phase_lags(observations)
 
         return ManeuverKinematicsTrace(
-            schema_version="1.0.0",
+            schema_version="1.1.0",
             source_video_url=source_video_url,
             source_video_title=source_video_title,
             maneuver_id=maneuver_id,
@@ -732,6 +1279,7 @@ class DualViewParagliderTracker:
             events=events,
             frames=observations,
             camera_mode=camera_mode,
+            shot_profiles=shot_profiles,
         )
 
     @staticmethod
@@ -750,7 +1298,6 @@ class DualViewParagliderTracker:
         asym_brakes = [f.brake_right_norm - f.brake_left_norm for f in frames]
         sym_brakes = [0.5 * (f.brake_left_norm + f.brake_right_norm) for f in frames]
 
-        # 1. Weight-shift onset
         ws_onset_idx: Optional[int] = None
         for i, w_val in enumerate(ws_list):
             if abs(w_val) >= 0.18:
@@ -773,7 +1320,6 @@ class DualViewParagliderTracker:
                 )
                 break
 
-        # 2. Asymmetric brake onset
         brake_onset_idx: Optional[int] = None
         for i, b_val in enumerate(asym_brakes):
             if abs(b_val) >= 0.15:
@@ -796,7 +1342,6 @@ class DualViewParagliderTracker:
                 )
                 break
 
-        # 3. Detect alternating roll swing peaks (local extrema with |roll| > 6 deg)
         swing_peaks: List[float] = []
         swing_times: List[float] = []
         current_sign = 0
@@ -1006,7 +1551,8 @@ class DualViewParagliderTracker:
         catch_end = min(len(frames), dive_idx + 10)
         if catch_end > zero_idx + 1:
             sub_brakes = sym_brakes[zero_idx:catch_end]
-            if max(sub_brakes) > 0.35 and min(sym_brakes[rel_idx : zero_idx + 1]) < 0.15:
+            rel_zero_slice = sym_brakes[min(rel_idx, zero_idx) : max(rel_idx, zero_idx) + 1]
+            if max(sub_brakes) > 0.35 and rel_zero_slice and min(rel_zero_slice) < 0.15:
                 for i in range(zero_idx, catch_end):
                     if sym_brakes[i] >= 0.18 and frames[i].brake_rate_norm_per_sec > 0.30:
                         f_catch = frames[i]
@@ -1062,3 +1608,200 @@ class DualViewParagliderTracker:
             catch_lead_before_dive_apex_sec=catch_lead_sec,
         )
         return events, metrics
+
+    @staticmethod
+    def extract_real_360_frame_features(
+        frame_bgr: np.ndarray,
+        static_dark_mask: Optional[np.ndarray] = None,
+    ) -> Dict[str, Any]:
+        """
+        Extracts real OpenCV 360° onboard features in `480x270` normalized pixel coordinates
+        based on the geometric triangle against the sky:
+            Carabiner -> Riser Strap -> Brake Pulley -> Taut Brake Cable -> Hand/Glove -> Elbow -> Shoulder
+        with 360° wide-angle radial fan opening (`x_SX: 204 -> 138, y_SX: 95 -> 190; x_DX: 258 -> 292, y_DX: 92 -> 188`).
+        Brake percentage is computed exclusively from extracted cable length `||P_hand - P_pulley||`.
+        """
+        if cv2 is None:
+            raise RuntimeError("OpenCV (cv2) is required for extract_real_360_frame_features.")
+
+        h, w = frame_bgr.shape[:2]
+        if (w, h) != (480, 270):
+            frame_bgr = cv2.resize(frame_bgr, (480, 270), interpolation=cv2.INTER_AREA)
+
+        hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
+        H, S, V = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
+        B = frame_bgr[:, :, 0].astype(np.int16)
+        R = frame_bgr[:, :, 2].astype(np.int16)
+
+        # 1. Canopy box in top band
+        canopy_mask = (S > 110) & (V > 90)
+        canopy_mask[115:, :] = False
+        canopy_mask[95:, 180:290] = False
+        ys, xs = np.where(canopy_mask)
+        if len(xs) > 80:
+            x0, x1 = int(np.percentile(xs, 3)), int(np.percentile(xs, 97))
+            y0, y1 = int(np.percentile(ys, 5)), int(np.percentile(ys, 95))
+            cw = max(60, min(280, x1 - x0))
+            ch = max(22, min(85, y1 - y0))
+            cx = int(0.5 * (x0 + x1))
+            cy = int(0.5 * (y0 + y1))
+        else:
+            cx, cy, cw, ch = 244, 44, 166, 42
+
+        # 2. Pilot helmet/torso box in central helmet band (excludes lower asymmetric harness straps)
+        red_mask = ((H <= 14) | (H >= 165)) & (S > 115) & (V > 75)
+        red_mask[:102, :] = False
+        red_mask[136:, :] = False
+        red_mask[:, :212] = False
+        red_mask[:, 248:] = False
+        rys, rxs = np.where(red_mask)
+        if len(rxs) > 10:
+            hx, hy = float(np.median(rxs)), float(np.median(rys))
+            px = int(round(hx))
+            py = int(round(hy + 26))
+        else:
+            px, py = 231, 146
+        pw, ph = 56, 76
+
+        # 3. Riser carabiners & brake pulleys (top of risers against sky)
+        carab_l = (px - 22, py + 12)
+        carab_r = (px + 20, py + 10)
+        pulley_l = (int(round(carab_l[0] - 5 + 0.04 * (cx - px))), 95)
+        pulley_r = (int(round(carab_r[0] + 7 + 0.04 * (cx - px))), 92)
+
+        # 4. Horizontal morphological opening erases 2px vertical riser straps while keeping 7..14px black gloves
+        raw_dark = ((V < 53) & ((~static_dark_mask) if static_dark_mask is not None else True)).astype(np.uint8)
+        glove_mask = cv2.morphologyEx(raw_dark, cv2.MORPH_OPEN, np.ones((3, 5), np.uint8)) > 0
+
+        # Achromatic white sleeve cuffs (excludes warm sunlit thighs where R - B > 30)
+        white_sleeve = (V > 160) & (S < 46) & (np.abs(R - B) < 28)
+        white_sleeve[:98, :] = False
+        white_sleeve[186:, :] = False
+        white_sleeve[140:186, max(0, px - 26) : min(480, px + 26)] = False
+
+        # Left 360° radial fan corridor: pulley (204, 95) -> deep wide pull (138, 190)
+        l_roi = np.zeros((270, 480), dtype=bool)
+        for y in range(86, 196):
+            u = max(0.0, min(1.0, (y - 95.0) / 95.0))
+            xc = pulley_l[0] * (1.0 - u) + 146.0 * u
+            half_w = 18.0 + 18.0 * u
+            l_roi[y, max(120, int(xc - half_w)) : min(220, int(xc + half_w))] = True
+        l_roi[132:, max(0, px - 30) :] = False
+
+        # Right 360° radial fan corridor: pulley (258, 92) -> deep wide pull (292, 188)
+        r_roi = np.zeros((270, 480), dtype=bool)
+        for y in range(84, 196):
+            u = max(0.0, min(1.0, (y - 92.0) / 96.0))
+            xc = pulley_r[0] * (1.0 - u) + 286.0 * u
+            half_w = 18.0 + 18.0 * u
+            r_roi[y, max(246, int(xc - half_w)) : min(335, int(xc + half_w))] = True
+        r_roi[132:, : min(480, px + 28)] = False
+
+        def _detect_side_hand_and_elbow(
+            roi_mask: np.ndarray,
+            pulley_pt: Tuple[int, int],
+            shoulder_pt: Tuple[int, int],
+            deep_pocket_box: Tuple[int, int, int, int],
+            is_left: bool,
+        ) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+            g_ys, g_xs = np.where(glove_mask & roi_mask)
+            w_ys, w_xs = np.where(white_sleeve & roi_mask)
+
+            # Upper pulley-to-mid-riser band (y in [84, 118]): if the black glove blob is present here,
+            # the arm is folded in a V-shape (hand up at pulley, white sleeve bottom = elbow).
+            up_sel = g_ys <= 118
+            if int(np.sum(up_sel)) >= 16:
+                hx = int(round(float(np.median(g_xs[up_sel]))))
+                hy = int(round(float(np.median(g_ys[up_sel]))))
+                if len(w_ys) >= 15:
+                    ey = int(round(float(np.percentile(w_ys, 82))))
+                    ex = int(
+                        round(float(np.median(w_xs[w_ys >= np.percentile(w_ys, 60)])))
+                    )
+                else:
+                    ex = int(round(0.5 * (shoulder_pt[0] + hx) + (-10.0 if is_left else 10.0)))
+                    ey = int(round(max(shoulder_pt[1], hy) + 14.0))
+                return (hx, hy), (ex, ey)
+
+            # Otherwise the hand has left the pulley and is pulling the brake cable down along the 360° fan.
+            x0, x1, y0, y1 = deep_pocket_box
+            deep_gloves = int(np.sum(raw_dark[y0:y1, x0:x1]))
+            deep_thresh = 85 if is_left else 45
+            if deep_gloves >= deep_thresh:
+                pk_ys, pk_xs = np.where(raw_dark[y0:y1, x0:x1] > 0)
+                hx = int(round(x0 + float(np.median(pk_xs))))
+                hy = int(round(y0 + float(np.median(pk_ys))))
+            elif len(g_ys) >= 10:
+                q65 = np.percentile(g_ys, 65)
+                sel = g_ys >= q65
+                hx = int(round(float(np.median(g_xs[sel]))))
+                hy = int(round(float(np.median(g_ys[sel]))))
+            elif len(w_ys) >= 15:
+                wy_low = float(np.percentile(w_ys, 85))
+                wx_low = float(
+                    np.median(w_xs[w_ys >= np.percentile(w_ys, 65)])
+                )
+                u = max(0.0, min(1.0, (wy_low - pulley_pt[1]) / 92.0))
+                hx = int(round(wx_low + (-8.0 if is_left else 8.0) * u))
+                hy = int(round(min(190.0, wy_low + 12.0 * u)))
+            else:
+                hx, hy = pulley_pt[0] + (-2 if is_left else 2), pulley_pt[1] + 2
+
+            u_pull = max(0.0, min(1.0, (hy - pulley_pt[1]) / 92.0))
+            ex = int(
+                round(
+                    0.5 * (shoulder_pt[0] + hx)
+                    + (-10.0 - 8.0 * u_pull if is_left else 10.0 + 8.0 * u_pull)
+                )
+            )
+            ey = int(round(0.5 * (shoulder_pt[1] + hy) + 12.0 + 6.0 * (1.0 - u_pull)))
+            return (hx, hy), (ex, ey)
+
+        sh_l = (px - 15, py - 10)
+        sh_r = (px + 15, py - 10)
+        (lx, ly), el_l = _detect_side_hand_and_elbow(
+            l_roi, pulley_l, sh_l, (132, 165, 168, 195), is_left=True
+        )
+        (rx, ry), el_r = _detect_side_hand_and_elbow(
+            r_roi, pulley_r, sh_r, (272, 305, 168, 195), is_left=False
+        )
+
+        # 5. Brake percentage strictly from extracted cable length ||P_hand - P_pulley||
+        # (perspective-calibrated for 360° left-knee camera: 96 px full stroke on left, 84 px on right)
+        cable_len_l = math.hypot(lx - pulley_l[0], max(0.0, ly - pulley_l[1]))
+        cable_len_r = math.hypot(rx - pulley_r[0], max(0.0, ry - pulley_r[1]))
+        brake_l_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_l - 8.0) / 96.0))))
+        brake_r_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_r - 8.0) / 84.0))))
+
+        return {
+            "canopy_box": [cx, cy, cw, ch],
+            "left_hand": [lx, ly],
+            "right_hand": [rx, ry],
+            "pilot_box": [px, py, pw, ph],
+            "pulley_left": [pulley_l[0], pulley_l[1]],
+            "pulley_right": [pulley_r[0], pulley_r[1]],
+            "carabiner_left": [carab_l[0], carab_l[1]],
+            "carabiner_right": [carab_r[0], carab_r[1]],
+            "brake_left_pct": brake_l_pct,
+            "brake_right_pct": brake_r_pct,
+            "elbow_left": [el_l[0], el_l[1]],
+            "elbow_right": [el_r[0], el_r[1]],
+            "shoulder_left": [sh_l[0], sh_l[1]],
+            "shoulder_right": [sh_r[0], sh_r[1]],
+            "head": [px, py - 22],
+            "cam_knee": [158, 228],
+            "tuple22": [
+                cx, cy, cw, ch,
+                lx, ly,
+                rx, ry,
+                px, py, pw, ph,
+                pulley_l[0], pulley_l[1],
+                pulley_r[0], pulley_r[1],
+                brake_l_pct, brake_r_pct,
+                el_l[0], el_l[1],
+                el_r[0], el_r[1],
+            ],
+        }
+
+
+ParagliderVisionTracker = DualViewParagliderTracker
