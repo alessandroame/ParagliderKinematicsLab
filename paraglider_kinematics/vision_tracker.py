@@ -1610,30 +1610,39 @@ class DualViewParagliderTracker:
         return events, metrics
 
     @staticmethod
-    def extract_real_360_frame_features(
+    def solve_inverse_kinematics_2link(
+        shoulder_xy: Tuple[float, float],
+        hand_xy: Tuple[float, float],
+        l1: float,
+        l2: float,
+        is_left: bool,
+    ) -> Tuple[float, float]:
+        """
+        Module 1B: Analytical 2-link planar inverse kinematics (`P_shoulder -> P_elbow(u) -> P_hand(u)`)
+        by circle-circle intersection with mirror-symmetric outward/downward anatomical normal `n_out`.
+        """
+        dx = float(hand_xy[0] - shoulder_xy[0])
+        dy = float(hand_xy[1] - shoulder_xy[1])
+        d_raw = math.hypot(dx, dy)
+        d = max(abs(l1 - l2) + 1.0, min(l1 + l2 - 1.0, max(1.0, d_raw)))
+        a = (l1 * l1 - l2 * l2 + d * d) / (2.0 * d)
+        h = math.sqrt(max(0.0, l1 * l1 - a * a))
+        ux, uy = dx / max(1.0, d_raw), dy / max(1.0, d_raw)
+
+        nx, ny = (uy, -ux) if is_left else (-uy, ux)
+        return (shoulder_xy[0] + a * ux + h * nx, shoulder_xy[1] + a * uy + h * ny)
+
+    @staticmethod
+    def _detect_360_canopy_and_torso_anchor(
         frame_bgr: np.ndarray,
-        static_dark_mask: Optional[np.ndarray] = None,
     ) -> Dict[str, Any]:
         """
-        Extracts real OpenCV 360° onboard features in `480x270` normalized pixel coordinates
-        based on the geometric triangle against the sky:
-            Carabiner -> Riser Strap -> Brake Pulley -> Taut Brake Cable -> Hand/Glove -> Elbow -> Shoulder
-        with 360° wide-angle radial fan opening (`x_SX: 204 -> 138, y_SX: 95 -> 190; x_DX: 258 -> 292, y_DX: 92 -> 188`).
-        Brake percentage is computed exclusively from extracted cable length `||P_hand - P_pulley||`.
+        Detects the upper canopy bounding box and the central pilot helmet/torso anchor `P_torso(t)`
+        in normalized `480x270` coordinates, deriving shoulders, carabiners, and pulleys relative to `P_torso(t)`.
         """
-        if cv2 is None:
-            raise RuntimeError("OpenCV (cv2) is required for extract_real_360_frame_features.")
-
-        h, w = frame_bgr.shape[:2]
-        if (w, h) != (480, 270):
-            frame_bgr = cv2.resize(frame_bgr, (480, 270), interpolation=cv2.INTER_AREA)
-
         hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
         H, S, V = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
-        B = frame_bgr[:, :, 0].astype(np.int16)
-        R = frame_bgr[:, :, 2].astype(np.int16)
 
-        # 1. Canopy box in top band
         canopy_mask = (S > 110) & (V > 90)
         canopy_mask[115:, :] = False
         canopy_mask[95:, 180:290] = False
@@ -1648,138 +1657,535 @@ class DualViewParagliderTracker:
         else:
             cx, cy, cw, ch = 244, 44, 166, 42
 
-        # 2. Pilot helmet/torso box in central helmet band (excludes lower asymmetric harness straps)
         red_mask = ((H <= 14) | (H >= 165)) & (S > 115) & (V > 75)
-        red_mask[:102, :] = False
-        red_mask[136:, :] = False
-        red_mask[:, :212] = False
-        red_mask[:, 248:] = False
+        red_mask[:100, :] = False
+        red_mask[140:, :] = False
+        red_mask[:, :208] = False
+        red_mask[:, 252:] = False
         rys, rxs = np.where(red_mask)
-        if len(rxs) > 10:
+        if len(rxs) >= 10:
             hx, hy = float(np.median(rxs)), float(np.median(rys))
-            px = int(round(hx))
-            py = int(round(hy + 26))
+            px = max(226, min(236, int(round(hx))))
+            py = max(144, min(149, int(round(hy + 12))))
+            has_helmet = True
         else:
             px, py = 231, 146
-        pw, ph = 56, 76
+            has_helmet = False
 
-        # 3. Riser carabiners & brake pulleys (top of risers against sky)
+        return {
+            "canopy_box": [cx, cy, cw, ch],
+            "px": px,
+            "py": py,
+            "pw": 56,
+            "ph": 76,
+            "has_helmet": has_helmet,
+            "hsv": hsv,
+        }
+
+    @classmethod
+    def calibrate_360_arm_kinematics(
+        cls,
+        frames_bgr: List[np.ndarray] | np.ndarray,
+    ) -> Dict[str, Any]:
+        """
+        Module 1A (`Pass 1`): Multi-frame anthropometric & perspective calibration over N frames (`480x270`).
+        Tracks the pilot helmet/torso anchor `P_torso(t)` with 5-point median smoothing, computes the
+        torso-referenced static harness mask, and calibrates apparent upper-arm `L1(u)` and forearm `L2(u)`
+        lengths at hands-up (`u=0`) and full-brake extension (`u=1`) for left and right arms.
+        """
+        if cv2 is None:
+            raise RuntimeError("OpenCV (cv2) is required for calibrate_360_arm_kinematics.")
+
+        norm_frames: List[np.ndarray] = []
+        for f in frames_bgr:
+            h, w = f.shape[:2]
+            if (w, h) != (480, 270):
+                norm_frames.append(cv2.resize(f, (480, 270), interpolation=cv2.INTER_AREA))
+            else:
+                norm_frames.append(f)
+
+        n_frames = len(norm_frames)
+        if n_frames == 0:
+            raise ValueError("calibrate_360_arm_kinematics requires at least 1 frame.")
+
+        sample_count = min(60, n_frames)
+        v_stack = np.array(
+            [cv2.cvtColor(f, cv2.COLOR_BGR2HSV)[:, :, 2] for f in norm_frames[:sample_count]]
+        )
+        p_level = 90 if sample_count < 12 else 60
+        static_dark = np.percentile(v_stack, p_level, axis=0) < 58
+        static_dark[:112, :] = False
+
+        raw_px: List[int] = []
+        raw_py: List[int] = []
+        canopy_boxes: List[List[int]] = []
+        helmet_flags: List[bool] = []
+
+        for f in norm_frames:
+            anch = cls._detect_360_canopy_and_torso_anchor(f)
+            raw_px.append(anch["px"])
+            raw_py.append(anch["py"])
+            canopy_boxes.append(anch["canopy_box"])
+            helmet_flags.append(anch["has_helmet"])
+
+        smooth_px: List[int] = []
+        smooth_py: List[int] = []
+        for i in range(n_frames):
+            i0 = max(0, i - 2)
+            i1 = min(n_frames, i + 3)
+            smooth_px.append(int(round(float(np.median(raw_px[i0:i1])))))
+            smooth_py.append(int(round(float(np.median(raw_py[i0:i1])))))
+
+        l1_0_l_samples: List[float] = []
+        l2_0_l_samples: List[float] = []
+        l1_1_l_samples: List[float] = []
+        l2_1_l_samples: List[float] = []
+
+        for idx in range(min(sample_count, n_frames)):
+            V = v_stack[idx]
+            px, py = smooth_px[idx], smooth_py[idx]
+            sh_l = (px - 15.0, py - 10.0)
+            pul_l = (px - 32.0, 93.0)
+            deep_l = (px - 78.0, py + 36.0)
+
+            raw_dark = ((V < 55) & (~static_dark)).astype(np.uint8)
+            raw_dark[148:, max(0, px - 59) : min(480, px + 43)] = 0
+            raw_dark[183:, :168] = 0
+            glove_open = cv2.morphologyEx(raw_dark, cv2.MORPH_OPEN, np.ones((3, 5), np.uint8))
+
+            top_density = float(
+                np.sum(glove_open[84:112, max(0, int(pul_l[0]) - 14) : min(480, int(pul_l[0]) + 14)])
+            )
+            bot_density = float(
+                np.sum(glove_open[165:183, max(0, int(deep_l[0]) - 14) : min(480, int(deep_l[0]) + 14)])
+            )
+            if top_density >= 45.0:
+                d0 = math.hypot(pul_l[0] - sh_l[0], pul_l[1] - sh_l[1])
+                l1_0_l_samples.append(max(31.0, min(37.0, 0.78 * d0)))
+                l2_0_l_samples.append(max(36.0, min(42.0, 0.90 * d0)))
+            if bot_density >= 65.0:
+                d1 = math.hypot(deep_l[0] - sh_l[0], deep_l[1] - sh_l[1])
+                l1_1_l_samples.append(max(36.0, min(41.0, 0.46 * d1)))
+                l2_1_l_samples.append(max(45.0, min(51.0, 0.57 * d1)))
+
+        l1_0_l = float(np.median(l1_0_l_samples)) if l1_0_l_samples else 34.0
+        l2_0_l = float(np.median(l2_0_l_samples)) if l2_0_l_samples else 39.0
+        l1_1_l = float(np.median(l1_1_l_samples)) if l1_1_l_samples else 38.0
+        l2_1_l = float(np.median(l2_1_l_samples)) if l2_1_l_samples else 48.0
+
+        persp_r = 0.89
+        return {
+            "static_dark_mask": static_dark,
+            "smooth_px": smooth_px,
+            "smooth_py": smooth_py,
+            "canopy_boxes": canopy_boxes,
+            "helmet_flags": helmet_flags,
+            "l1_0_left": round(l1_0_l, 2),
+            "l2_0_left": round(l2_0_l, 2),
+            "l1_1_left": round(l1_1_l, 2),
+            "l2_1_left": round(l2_1_l, 2),
+            "l1_0_right": round(l1_0_l * persp_r, 2),
+            "l2_0_right": round(l2_0_l * persp_r, 2),
+            "l1_1_right": round(l1_1_l * persp_r, 2),
+            "l2_1_right": round(l2_1_l * persp_r, 2),
+        }
+
+    @staticmethod
+    def _tubular_bone_contrast(
+        fg_map: np.ndarray,
+        p0: Tuple[float, float],
+        p1: Tuple[float, float],
+        r_tube: float = 9.0,
+        n_samples: int = 9,
+    ) -> float:
+        """
+        Oriented tubular matched-filter of anatomical radius `r_tube = 9 px` (`8-12 px` sleeve diameter)
+        sampled at `M = 9` interior points along bone segment `p0 -> p1`.
+        Maximizes `fg(center) - 0.5 * (fg(+r_tube * n) + fg(-r_tube * n))` so wide white clouds (`> 40 px`,
+        where `fg = 1` both on-axis and off-axis) and open blue sky (`fg = 0` everywhere) cancel to zero.
+        """
+        dx = float(p1[0] - p0[0])
+        dy = float(p1[1] - p0[1])
+        length = math.hypot(dx, dy)
+        if length < 4.0:
+            return 0.0
+        nx = -dy / length
+        ny = dx / length
+        h, w = fg_map.shape
+        acc = 0.0
+        for m in range(1, n_samples):
+            frac = m / float(n_samples)
+            xm = p0[0] + frac * dx
+            ym = p0[1] + frac * dy
+            xc = max(0, min(w - 1, int(round(xm))))
+            yc = max(0, min(h - 1, int(round(ym))))
+            xp = max(0, min(w - 1, int(round(xm + r_tube * nx))))
+            yp = max(0, min(h - 1, int(round(ym + r_tube * ny))))
+            xn = max(0, min(w - 1, int(round(xm - r_tube * nx))))
+            yn = max(0, min(h - 1, int(round(ym - r_tube * ny))))
+            c_val = float(fg_map[yc, xc])
+            p_val = float(fg_map[yp, xp])
+            n_val = float(fg_map[yn, xn])
+            acc += c_val - 0.5 * (p_val + n_val)
+        return acc / float(max(1, n_samples - 1))
+
+    @classmethod
+    def compute_arm_pose_energy(
+        cls,
+        frame_bgr: np.ndarray,
+        px: int,
+        py: int,
+        cx: int,
+        arm_calib: Optional[Dict[str, Any]] = None,
+        static_dark_mask: Optional[np.ndarray] = None,
+        n_states: int = 51,
+    ) -> Dict[str, Any]:
+        """
+        Module 2 (`Pass 2`): Evaluates the 2-link biomechanical pose energy `E_t(u_k)` over `51` discrete
+        brake-stroke states `u_k in [0, 1]` independently for the Left and Right arms, combining:
+          1. Oriented tubular matched-filter along forearm `P_el(u_k) -> P_hand(u_k)` and upper arm `P_sh -> P_el(u_k)`
+             against non-sky foreground (`B - R < 16 | V < 110`).
+          2. Morphological black-glove density (`cv2.morphologyEx(V < 55, MORPH_OPEN, 3x5)`) around `P_hand(u_k)`
+             with static harness and 360 deg knee-mount suppression.
+        """
+        hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
+        V = hsv[:, :, 2]
+        B = frame_bgr[:, :, 0].astype(np.int16)
+        R = frame_bgr[:, :, 2].astype(np.int16)
+
+        fg_map = ((B - R < 16) | (V < 110)).astype(np.float32)
+
+        eff_static = None
+        if static_dark_mask is not None:
+            eff_static = static_dark_mask.copy()
+            eff_static[:112, :] = False
+        elif arm_calib is not None and "static_dark_mask" in arm_calib:
+            eff_static = arm_calib["static_dark_mask"]
+
+        raw_dark = ((V < 55) & ((~eff_static) if eff_static is not None else True)).astype(np.uint8)
+        raw_dark[148:, max(0, px - 58) : min(480, px + 38)] = 0
+        raw_dark[110:152, max(0, px - 21) : min(480, px + 21)] = 0
+        raw_dark[186:, :168] = 0
+
+        glove_open = (
+            cv2.morphologyEx(raw_dark, cv2.MORPH_OPEN, np.ones((3, 5), np.uint8)) > 0
+        ).astype(np.float32)
+        raw_dark_f = raw_dark.astype(np.float32)
+
+        sh_l = (float(px - 15), float(py - 10))
+        sh_r = (float(px + 15), float(py - 10))
         carab_l = (px - 22, py + 12)
         carab_r = (px + 20, py + 10)
-        pulley_l = (int(round(carab_l[0] - 5 + 0.04 * (cx - px))), 95)
-        pulley_r = (int(round(carab_r[0] + 7 + 0.04 * (cx - px))), 92)
+        pulley_l = (int(round(carab_l[0] - 9 + 0.03 * (cx - px))), 93)
+        pulley_r = (int(round(carab_r[0] + 15 + 0.03 * (cx - px))), 93)
+        deep_l = (float(px - 77), float(py + 32))
+        deep_r = (float(px + 48), float(py + 29))
 
-        # 4. Horizontal morphological opening erases 2px vertical riser straps while keeping 7..14px black gloves
-        raw_dark = ((V < 53) & ((~static_dark_mask) if static_dark_mask is not None else True)).astype(np.uint8)
-        glove_mask = cv2.morphologyEx(raw_dark, cv2.MORPH_OPEN, np.ones((3, 5), np.uint8)) > 0
+        l1_0_l = float(arm_calib["l1_0_left"]) if arm_calib else 34.0
+        l2_0_l = float(arm_calib["l2_0_left"]) if arm_calib else 39.0
+        l1_1_l = float(arm_calib["l1_1_left"]) if arm_calib else 38.0
+        l2_1_l = float(arm_calib["l2_1_left"]) if arm_calib else 48.0
 
-        # Achromatic white sleeve cuffs (excludes warm sunlit thighs where R - B > 30)
-        white_sleeve = (V > 160) & (S < 46) & (np.abs(R - B) < 28)
-        white_sleeve[:98, :] = False
-        white_sleeve[186:, :] = False
-        white_sleeve[140:186, max(0, px - 26) : min(480, px + 26)] = False
+        l1_0_r = float(arm_calib["l1_0_right"]) if arm_calib else 30.5
+        l2_0_r = float(arm_calib["l2_0_right"]) if arm_calib else 35.0
+        l1_1_r = float(arm_calib["l1_1_right"]) if arm_calib else 34.0
+        l2_1_r = float(arm_calib["l2_1_right"]) if arm_calib else 42.5
 
-        # Left 360° radial fan corridor: pulley (204, 95) -> deep wide pull (138, 190)
-        l_roi = np.zeros((270, 480), dtype=bool)
-        for y in range(86, 196):
-            u = max(0.0, min(1.0, (y - 95.0) / 95.0))
-            xc = pulley_l[0] * (1.0 - u) + 146.0 * u
-            half_w = 18.0 + 18.0 * u
-            l_roi[y, max(120, int(xc - half_w)) : min(220, int(xc + half_w))] = True
-        l_roi[132:, max(0, px - 30) :] = False
+        u_grid = np.linspace(0.0, 1.0, n_states)
+        energy_l = np.zeros(n_states, dtype=np.float64)
+        energy_r = np.zeros(n_states, dtype=np.float64)
+        hands_l: List[Tuple[int, int]] = []
+        hands_r: List[Tuple[int, int]] = []
+        elbows_l: List[Tuple[int, int]] = []
+        elbows_r: List[Tuple[int, int]] = []
 
-        # Right 360° radial fan corridor: pulley (258, 92) -> deep wide pull (292, 188)
-        r_roi = np.zeros((270, 480), dtype=bool)
-        for y in range(84, 196):
-            u = max(0.0, min(1.0, (y - 92.0) / 96.0))
-            xc = pulley_r[0] * (1.0 - u) + 286.0 * u
-            half_w = 18.0 + 18.0 * u
-            r_roi[y, max(246, int(xc - half_w)) : min(335, int(xc + half_w))] = True
-        r_roi[132:, : min(480, px + 28)] = False
+        for k, u in enumerate(u_grid):
+            hl_x = pulley_l[0] * (1.0 - u) + deep_l[0] * u
+            hl_y = pulley_l[1] * (1.0 - u) + deep_l[1] * u
+            l1_l = (1.0 - u) * l1_0_l + u * l1_1_l
+            l2_l = (1.0 - u) * l2_0_l + u * l2_1_l
+            el_l = cls.solve_inverse_kinematics_2link(sh_l, (hl_x, hl_y), l1_l, l2_l, is_left=True)
 
-        def _detect_side_hand_and_elbow(
-            roi_mask: np.ndarray,
-            pulley_pt: Tuple[int, int],
-            shoulder_pt: Tuple[int, int],
-            deep_pocket_box: Tuple[int, int, int, int],
-            is_left: bool,
-        ) -> Tuple[Tuple[int, int], Tuple[int, int]]:
-            g_ys, g_xs = np.where(glove_mask & roi_mask)
-            w_ys, w_xs = np.where(white_sleeve & roi_mask)
-
-            # Upper pulley-to-mid-riser band (y in [84, 118]): if the black glove blob is present here,
-            # the arm is folded in a V-shape (hand up at pulley, white sleeve bottom = elbow).
-            up_sel = g_ys <= 118
-            if int(np.sum(up_sel)) >= 16:
-                hx = int(round(float(np.median(g_xs[up_sel]))))
-                hy = int(round(float(np.median(g_ys[up_sel]))))
-                if len(w_ys) >= 15:
-                    ey = int(round(float(np.percentile(w_ys, 82))))
-                    ex = int(
-                        round(float(np.median(w_xs[w_ys >= np.percentile(w_ys, 60)])))
-                    )
-                else:
-                    ex = int(round(0.5 * (shoulder_pt[0] + hx) + (-10.0 if is_left else 10.0)))
-                    ey = int(round(max(shoulder_pt[1], hy) + 14.0))
-                return (hx, hy), (ex, ey)
-
-            # Otherwise the hand has left the pulley and is pulling the brake cable down along the 360° fan.
-            x0, x1, y0, y1 = deep_pocket_box
-            deep_gloves = int(np.sum(raw_dark[y0:y1, x0:x1]))
-            deep_thresh = 85 if is_left else 45
-            if deep_gloves >= deep_thresh:
-                pk_ys, pk_xs = np.where(raw_dark[y0:y1, x0:x1] > 0)
-                hx = int(round(x0 + float(np.median(pk_xs))))
-                hy = int(round(y0 + float(np.median(pk_ys))))
-            elif len(g_ys) >= 10:
-                q65 = np.percentile(g_ys, 65)
-                sel = g_ys >= q65
-                hx = int(round(float(np.median(g_xs[sel]))))
-                hy = int(round(float(np.median(g_ys[sel]))))
-            elif len(w_ys) >= 15:
-                wy_low = float(np.percentile(w_ys, 85))
-                wx_low = float(
-                    np.median(w_xs[w_ys >= np.percentile(w_ys, 65)])
-                )
-                u = max(0.0, min(1.0, (wy_low - pulley_pt[1]) / 92.0))
-                hx = int(round(wx_low + (-8.0 if is_left else 8.0) * u))
-                hy = int(round(min(190.0, wy_low + 12.0 * u)))
-            else:
-                hx, hy = pulley_pt[0] + (-2 if is_left else 2), pulley_pt[1] + 2
-
-            u_pull = max(0.0, min(1.0, (hy - pulley_pt[1]) / 92.0))
-            ex = int(
-                round(
-                    0.5 * (shoulder_pt[0] + hx)
-                    + (-10.0 - 8.0 * u_pull if is_left else 10.0 + 8.0 * u_pull)
+            tb_fore_l = cls._tubular_bone_contrast(fg_map, el_l, (hl_x, hl_y))
+            tb_up_l = cls._tubular_bone_contrast(fg_map, sh_l, el_l)
+            ix_l, iy_l = int(round(hl_x)), int(round(hl_y))
+            gl_l = float(
+                np.mean(
+                    glove_open[
+                        max(0, iy_l - 10) : min(270, iy_l + 5),
+                        max(0, ix_l - 10) : min(480, ix_l + 11),
+                    ]
                 )
             )
-            ey = int(round(0.5 * (shoulder_pt[1] + hy) + 12.0 + 6.0 * (1.0 - u_pull)))
-            return (hx, hy), (ex, ey)
+            dk_l = float(
+                np.mean(
+                    raw_dark_f[
+                        max(0, iy_l - 10) : min(270, iy_l + 5),
+                        max(0, ix_l - 10) : min(480, ix_l + 11),
+                    ]
+                )
+            )
+            energy_l[k] = 0.14 * tb_fore_l + 0.08 * tb_up_l + 2.50 * gl_l + 0.55 * dk_l
+            hands_l.append((ix_l, iy_l))
+            elbows_l.append((int(round(el_l[0])), int(round(el_l[1]))))
 
-        sh_l = (px - 15, py - 10)
-        sh_r = (px + 15, py - 10)
-        (lx, ly), el_l = _detect_side_hand_and_elbow(
-            l_roi, pulley_l, sh_l, (132, 165, 168, 195), is_left=True
-        )
-        (rx, ry), el_r = _detect_side_hand_and_elbow(
-            r_roi, pulley_r, sh_r, (272, 305, 168, 195), is_left=False
-        )
+            hr_x = pulley_r[0] * (1.0 - u) + deep_r[0] * u
+            hr_y = pulley_r[1] * (1.0 - u) + deep_r[1] * u
+            l1_r = (1.0 - u) * l1_0_r + u * l1_1_r
+            l2_r = (1.0 - u) * l2_0_r + u * l2_1_r
+            el_r = cls.solve_inverse_kinematics_2link(sh_r, (hr_x, hr_y), l1_r, l2_r, is_left=False)
 
-        # 5. Brake percentage strictly from extracted cable length ||P_hand - P_pulley||
-        # (perspective-calibrated for 360° left-knee camera: 96 px full stroke on left, 84 px on right)
-        cable_len_l = math.hypot(lx - pulley_l[0], max(0.0, ly - pulley_l[1]))
-        cable_len_r = math.hypot(rx - pulley_r[0], max(0.0, ry - pulley_r[1]))
-        brake_l_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_l - 8.0) / 96.0))))
-        brake_r_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_r - 8.0) / 84.0))))
+            tb_fore_r = cls._tubular_bone_contrast(fg_map, el_r, (hr_x, hr_y))
+            tb_up_r = cls._tubular_bone_contrast(fg_map, sh_r, el_r)
+            ix_r, iy_r = int(round(hr_x)), int(round(hr_y))
+            gl_r = float(
+                np.mean(
+                    glove_open[
+                        max(0, iy_r - 10) : min(270, iy_r + 5),
+                        max(0, ix_r - 12) : min(480, ix_r + 13),
+                    ]
+                )
+            )
+            dk_r = float(
+                np.mean(
+                    raw_dark_f[
+                        max(0, iy_r - 10) : min(270, iy_r + 5),
+                        max(0, ix_r - 12) : min(480, ix_r + 13),
+                    ]
+                )
+            )
+            energy_r[k] = 0.14 * tb_fore_r + 0.08 * tb_up_r + 2.50 * gl_r + 0.55 * dk_r
+            hands_r.append((ix_r, iy_r))
+            elbows_r.append((int(round(el_r[0])), int(round(el_r[1]))))
+
+        max_el = float(np.max(energy_l))
+        if max_el > 0.05:
+            energy_l = energy_l / max_el
+        max_er = float(np.max(energy_r))
+        if max_er > 0.05:
+            energy_r = energy_r / max_er
+
+        return {
+            "u_grid": u_grid,
+            "energy_left": energy_l,
+            "energy_right": energy_r,
+            "hands_left": hands_l,
+            "hands_right": hands_r,
+            "elbows_left": elbows_l,
+            "elbows_right": elbows_r,
+            "pulley_left": pulley_l,
+            "pulley_right": pulley_r,
+            "carabiner_left": carab_l,
+            "carabiner_right": carab_r,
+            "shoulder_left": (int(round(sh_l[0])), int(round(sh_l[1]))),
+            "shoulder_right": (int(round(sh_r[0])), int(round(sh_r[1]))),
+        }
+
+    @staticmethod
+    def solve_viterbi_brake_trajectory(
+        energy_matrix: np.ndarray,
+        max_du_step: int = 12,
+        smooth_weight: float = 1.15,
+    ) -> np.ndarray:
+        """
+        Module 3: Global dynamic programming (Viterbi) solver over `K = 51` discrete states `u in [0, 1]`.
+        Enforces biomechanical velocity limit `|du| <= 0.24` per `0.25 s` (`+/-12` grid steps) and quadratic
+        transition penalty `lambda * (u_k - u_prev)^2`.
+        Returns optimal state indices `k*_0 .. k*_{T-1}`.
+        """
+        t_count, k_count = energy_matrix.shape
+        if t_count == 0:
+            return np.zeros(0, dtype=np.int32)
+
+        dp = np.full((t_count, k_count), -1e9, dtype=np.float64)
+        backptr = np.zeros((t_count, k_count), dtype=np.int32)
+        dp[0] = energy_matrix[0]
+
+        denom = float(max(1, k_count - 1))
+        for t in range(1, t_count):
+            for k in range(k_count):
+                k0 = max(0, k - max_du_step)
+                k1 = min(k_count, k + max_du_step + 1)
+                du = (k - np.arange(k0, k1, dtype=np.float64)) / denom
+                scores = dp[t - 1, k0:k1] - smooth_weight * (du * du)
+                best_rel = int(np.argmax(scores))
+                dp[t, k] = energy_matrix[t, k] + scores[best_rel]
+                backptr[t, k] = k0 + best_rel
+
+        opt_indices = np.zeros(t_count, dtype=np.int32)
+        opt_indices[t_count - 1] = int(np.argmax(dp[t_count - 1]))
+        for t in range(t_count - 2, -1, -1):
+            opt_indices[t] = backptr[t + 1, opt_indices[t + 1]]
+        return opt_indices
+
+    @classmethod
+    def extract_real_360_sequence_biokinematic(
+        cls,
+        frames_bgr: List[np.ndarray] | np.ndarray,
+    ) -> List[Dict[str, Any]]:
+        """
+        Two-Pass Biomechanical + Tubular + Viterbi 360 deg sequence extractor on `N` frames (`480x270`):
+          - Pass 1: Runs `calibrate_360_arm_kinematics` to calibrate torso trajectory `P_torso(t)`,
+            static harness mask, and perspective bone lengths `L1(u), L2(u)`.
+          - Pass 2: Evaluates `compute_arm_pose_energy` across all `51` states `u in [0, 1]` for every frame.
+          - Pass 3: Decodes optimal left and right trajectories `u_L*(t), u_R*(t)` via independent Viterbi
+            dynamic programming and derives brake percentages strictly from `||P_hand(u*_t) - P_pulley(t)||`.
+        """
+        arm_calib = cls.calibrate_360_arm_kinematics(frames_bgr)
+        n_frames = len(frames_bgr)
+        n_states = 51
+
+        energy_mat_l = np.zeros((n_frames, n_states), dtype=np.float64)
+        energy_mat_r = np.zeros((n_frames, n_states), dtype=np.float64)
+        frame_poses: List[Dict[str, Any]] = []
+
+        for idx, raw_f in enumerate(frames_bgr):
+            h, w = raw_f.shape[:2]
+            f_bgr = (
+                cv2.resize(raw_f, (480, 270), interpolation=cv2.INTER_AREA)
+                if (w, h) != (480, 270)
+                else raw_f
+            )
+            px = arm_calib["smooth_px"][idx]
+            py = arm_calib["smooth_py"][idx]
+            c_box = arm_calib["canopy_boxes"][idx]
+            pose = cls.compute_arm_pose_energy(
+                f_bgr,
+                px=px,
+                py=py,
+                cx=c_box[0],
+                arm_calib=arm_calib,
+                static_dark_mask=arm_calib["static_dark_mask"],
+                n_states=n_states,
+            )
+            energy_mat_l[idx] = pose["energy_left"]
+            energy_mat_r[idx] = pose["energy_right"]
+            frame_poses.append(pose)
+
+        opt_k_l = cls.solve_viterbi_brake_trajectory(energy_mat_l, max_du_step=12, smooth_weight=0.45)
+        opt_k_r = cls.solve_viterbi_brake_trajectory(energy_mat_r, max_du_step=12, smooth_weight=0.45)
+
+        results: List[Dict[str, Any]] = []
+        for idx in range(n_frames):
+            pose = frame_poses[idx]
+            c_box = arm_calib["canopy_boxes"][idx]
+            px = arm_calib["smooth_px"][idx]
+            py = arm_calib["smooth_py"][idx]
+            pw, ph = 56, 76
+
+            kl = int(opt_k_l[idx])
+            kr = int(opt_k_r[idx])
+            lx, ly = pose["hands_left"][kl]
+            rx, ry = pose["hands_right"][kr]
+            el_l = pose["elbows_left"][kl]
+            el_r = pose["elbows_right"][kr]
+            pul_l = pose["pulley_left"]
+            pul_r = pose["pulley_right"]
+            carab_l = pose["carabiner_left"]
+            carab_r = pose["carabiner_right"]
+            sh_l = pose["shoulder_left"]
+            sh_r = pose["shoulder_right"]
+
+            cable_len_l = math.hypot(lx - pul_l[0], max(0.0, ly - pul_l[1]))
+            cable_len_r = math.hypot(rx - pul_r[0], max(0.0, ry - pul_r[1]))
+            brake_l_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_l - 8.0) / 86.0))))
+            brake_r_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_r - 8.0) / 78.0))))
+
+            cx, cy, cw, ch = c_box
+            results.append(
+                {
+                    "canopy_box": c_box,
+                    "left_hand": [lx, ly],
+                    "right_hand": [rx, ry],
+                    "pilot_box": [px, py, pw, ph],
+                    "pulley_left": [pul_l[0], pul_l[1]],
+                    "pulley_right": [pul_r[0], pul_r[1]],
+                    "carabiner_left": [carab_l[0], carab_l[1]],
+                    "carabiner_right": [carab_r[0], carab_r[1]],
+                    "brake_left_pct": brake_l_pct,
+                    "brake_right_pct": brake_r_pct,
+                    "elbow_left": [el_l[0], el_l[1]],
+                    "elbow_right": [el_r[0], el_r[1]],
+                    "shoulder_left": [sh_l[0], sh_l[1]],
+                    "shoulder_right": [sh_r[0], sh_r[1]],
+                    "head": [px, py - 22],
+                    "cam_knee": [158, 228],
+                    "u_left": round(kl / 50.0, 2),
+                    "u_right": round(kr / 50.0, 2),
+                    "tuple22": [
+                        cx, cy, cw, ch,
+                        lx, ly,
+                        rx, ry,
+                        px, py, pw, ph,
+                        pul_l[0], pul_l[1],
+                        pul_r[0], pul_r[1],
+                        brake_l_pct, brake_r_pct,
+                        el_l[0], el_l[1],
+                        el_r[0], el_r[1],
+                    ],
+                }
+            )
+        return results
+
+    @classmethod
+    def extract_real_360_frame_features(
+        cls,
+        frame_bgr: np.ndarray,
+        static_dark_mask: Optional[np.ndarray] = None,
+        arm_calib: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Extracts real OpenCV 360 deg onboard features in `480x270` normalized pixel coordinates
+        using 2-link biomechanical inverse kinematics (`P_sh -> P_el(u) -> P_hand(u)`) and
+        the oriented tubular matched-filter + morphological black-glove detector.
+        Brake percentage is computed exclusively from extracted cable length `||P_hand(u*) - P_pulley||`.
+        """
+        if cv2 is None:
+            raise RuntimeError("OpenCV (cv2) is required for extract_real_360_frame_features.")
+
+        h, w = frame_bgr.shape[:2]
+        if (w, h) != (480, 270):
+            frame_bgr = cv2.resize(frame_bgr, (480, 270), interpolation=cv2.INTER_AREA)
+
+        anch = cls._detect_360_canopy_and_torso_anchor(frame_bgr)
+        cx, cy, cw, ch = anch["canopy_box"]
+        px, py, pw, ph = anch["px"], anch["py"], anch["pw"], anch["ph"]
+
+        pose = cls.compute_arm_pose_energy(
+            frame_bgr,
+            px=px,
+            py=py,
+            cx=cx,
+            arm_calib=arm_calib,
+            static_dark_mask=static_dark_mask,
+            n_states=51,
+        )
+        kl = int(np.argmax(pose["energy_left"]))
+        kr = int(np.argmax(pose["energy_right"]))
+
+        lx, ly = pose["hands_left"][kl]
+        rx, ry = pose["hands_right"][kr]
+        el_l = pose["elbows_left"][kl]
+        el_r = pose["elbows_right"][kr]
+        pul_l = pose["pulley_left"]
+        pul_r = pose["pulley_right"]
+        carab_l = pose["carabiner_left"]
+        carab_r = pose["carabiner_right"]
+        sh_l = pose["shoulder_left"]
+        sh_r = pose["shoulder_right"]
+
+        cable_len_l = math.hypot(lx - pul_l[0], max(0.0, ly - pul_l[1]))
+        cable_len_r = math.hypot(rx - pul_r[0], max(0.0, ry - pul_r[1]))
+        brake_l_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_l - 8.0) / 86.0))))
+        brake_r_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_r - 8.0) / 78.0))))
 
         return {
             "canopy_box": [cx, cy, cw, ch],
             "left_hand": [lx, ly],
             "right_hand": [rx, ry],
             "pilot_box": [px, py, pw, ph],
-            "pulley_left": [pulley_l[0], pulley_l[1]],
-            "pulley_right": [pulley_r[0], pulley_r[1]],
+            "pulley_left": [pul_l[0], pul_l[1]],
+            "pulley_right": [pul_r[0], pul_r[1]],
             "carabiner_left": [carab_l[0], carab_l[1]],
             "carabiner_right": [carab_r[0], carab_r[1]],
             "brake_left_pct": brake_l_pct,
@@ -1790,13 +2196,15 @@ class DualViewParagliderTracker:
             "shoulder_right": [sh_r[0], sh_r[1]],
             "head": [px, py - 22],
             "cam_knee": [158, 228],
+            "u_left": round(kl / 50.0, 2),
+            "u_right": round(kr / 50.0, 2),
             "tuple22": [
                 cx, cy, cw, ch,
                 lx, ly,
                 rx, ry,
                 px, py, pw, ph,
-                pulley_l[0], pulley_l[1],
-                pulley_r[0], pulley_r[1],
+                pul_l[0], pul_l[1],
+                pul_r[0], pul_r[1],
                 brake_l_pct, brake_r_pct,
                 el_l[0], el_l[1],
                 el_r[0], el_r[1],

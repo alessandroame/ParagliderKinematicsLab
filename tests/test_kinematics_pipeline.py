@@ -290,6 +290,36 @@ class TestKinematicsPipeline(unittest.TestCase):
         self.assertGreaterEqual(feat_30["brake_left_pct"], 85)
         self.assertGreaterEqual(feat_30["brake_right_pct"], 85)
 
+        # Verify 2-link analytical inverse kinematics preserves exact bone lengths L1, L2
+        import math
+
+        el_l = DualViewParagliderTracker.solve_inverse_kinematics_2link(
+            (216.0, 136.0), (200.0, 93.0), 34.0, 39.0, is_left=True
+        )
+        self.assertAlmostEqual(math.hypot(el_l[0] - 216.0, el_l[1] - 136.0), 34.0, delta=0.05)
+        self.assertAlmostEqual(math.hypot(200.0 - el_l[0], 93.0 - el_l[1]), 39.0, delta=0.05)
+
+        # Verify tubular matched filter cancels wide uniform clouds (= 0.0) and highlights 10px sleeve (> 0.8)
+        cloud_map = np.ones((270, 480), dtype=np.float32)
+        self.assertAlmostEqual(
+            DualViewParagliderTracker._tubular_bone_contrast(cloud_map, (180.0, 130.0), (155.0, 180.0)),
+            0.0,
+            delta=1e-5,
+        )
+        sleeve_map = np.zeros((270, 480), dtype=np.float32)
+        cv2.line(sleeve_map, (180, 130), (155, 180), 1.0, thickness=8)
+        self.assertGreater(
+            DualViewParagliderTracker._tubular_bone_contrast(sleeve_map, (180.0, 130.0), (155.0, 180.0)),
+            0.85,
+        )
+
+        # Verify 2-pass calibration + Viterbi sequence extraction (5 steps * 0.24 = 1.20 >= 1.00 full stroke)
+        seq = DualViewParagliderTracker.extract_real_360_sequence_biokinematic([f22] * 4 + [f30] * 6)
+        self.assertEqual(len(seq), 10)
+        self.assertLessEqual(seq[0]["brake_left_pct"], 6)
+        self.assertGreaterEqual(seq[-1]["brake_left_pct"], 85)
+        self.assertGreaterEqual(seq[-1]["brake_right_pct"], 85)
+
 
 if __name__ == "__main__":
     unittest.main()
