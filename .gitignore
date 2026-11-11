@@ -8,8 +8,10 @@ __pycache__/
 venv/
 env/
 
-# Video cache and extracted raw frames
-videos/
+# Video cache and extracted raw frames (keep 08:22 and 08:30 regression control frames)
+videos/*
+!videos/frame_08_22.png
+!videos/frame_08_30.png
 frames_cache/
 *.mp4
 *.mkv
