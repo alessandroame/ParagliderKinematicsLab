@@ -320,6 +320,60 @@ class TestKinematicsPipeline(unittest.TestCase):
         self.assertGreaterEqual(seq[-1]["brake_left_pct"], 85)
         self.assertGreaterEqual(seq[-1]["brake_right_pct"], 85)
 
+    def test_analytical_360_optical_projection_and_three_geometric_invariants(self) -> None:
+        import math
+        import numpy as np
+
+        opt = DualViewParagliderTracker.solve_360_optical_calibration_from_invariants()
+
+        # Invariant 1: Canopy cone b_proj=8.80m at Z_canopy=7.50m vs upper-frame span -> f_top=138.07px, f_px=165px, k1=-0.2505
+        self.assertAlmostEqual(opt["focal_px"], 165.0, delta=0.1)
+        self.assertAlmostEqual(opt["focal_top_app_px"], 138.07, delta=0.1)
+        self.assertAlmostEqual(opt["focal_35mm_eq"], 12.38, delta=0.05)
+        self.assertAlmostEqual(opt["k1_radial"], -0.2505, delta=0.005)
+        self.assertAlmostEqual(opt["fov_horizontal_deg"], 142.06, delta=0.5)
+        self.assertAlmostEqual(opt["fov_vertical_deg"], 92.24, delta=0.5)
+        self.assertAlmostEqual(opt["fov_horizontal_pinhole_deg"], 111.0, delta=0.5)
+        self.assertAlmostEqual(opt["fov_vertical_pinhole_deg"], 78.58, delta=0.5)
+
+        # Invariant 2: Rigid harness/riser trapezium (W_chest=0.44m, L_riser=0.48m) exact 3D & 0.00px reprojection
+        self.assertAlmostEqual(opt["w_chest_3d_m"], 0.44, delta=1e-4)
+        self.assertAlmostEqual(opt["l_riser_left_3d_m"], 0.48, delta=1e-4)
+        self.assertAlmostEqual(opt["l_riser_right_3d_m"], 0.48, delta=1e-4)
+        self.assertLess(opt["reproj_rmse_px"], 1e-5)
+        self.assertLess(opt["metric_residual_m"], 1e-5)
+        self.assertAlmostEqual(opt["camera_pitch_deg"], 45.0, delta=1.5)
+        self.assertAlmostEqual(opt["persp_r"], 0.89, delta=0.01)
+        self.assertAlmostEqual(opt["persp_scale_lr"], 1.44, delta=0.05)
+
+        # Invariant 3: Constant 3D arm bones (0.263m, 0.295m) project via Pi to L1(0)=34->38px, L2(0)=39->48px
+        self.assertAlmostEqual(opt["l1_metric_3d_m"], 0.263, delta=1e-3)
+        self.assertAlmostEqual(opt["l2_metric_3d_m"], 0.295, delta=1e-3)
+        self.assertAlmostEqual(opt["l1_0_left"], 34.0, delta=0.25)
+        self.assertAlmostEqual(opt["l2_0_left"], 39.0, delta=0.25)
+        self.assertAlmostEqual(opt["l1_1_left"], 38.0, delta=0.25)
+        self.assertAlmostEqual(opt["l2_1_left"], 48.0, delta=0.25)
+        self.assertAlmostEqual(opt["l1_0_right"] / opt["l1_0_left"], opt["persp_r"], delta=0.01)
+        self.assertAlmostEqual(opt["l2_1_right"] / opt["l2_1_left"], opt["persp_r"], delta=0.01)
+
+        # Mirror-symmetry invariant when camera is centered (mirror_symmetric=True)
+        opt_sym = DualViewParagliderTracker.solve_360_optical_calibration_from_invariants(
+            mirror_symmetric=True
+        )
+        self.assertAlmostEqual(opt_sym["persp_r"], 1.0, delta=1e-6)
+        self.assertAlmostEqual(opt_sym["l1_0_left"], opt_sym["l1_0_right"], delta=1e-6)
+        self.assertAlmostEqual(opt_sym["l2_1_left"], opt_sym["l2_1_right"], delta=1e-6)
+
+        # Orthonormality of R_cam and exact round-trip of Pi <-> pixel_to_360_optical_ray
+        r_mat = DualViewParagliderTracker.build_360_camera_rotation_matrix(45.0, 14.2, -2.2)
+        self.assertAlmostEqual(float(np.linalg.det(r_mat)), 1.0, delta=1e-9)
+        ray = DualViewParagliderTracker.pixel_to_360_optical_ray(207.0, 95.0, 165.0, -0.2505)
+        u_back, v_back = DualViewParagliderTracker.project_360_point_to_pixel(
+            1.075 * ray, f_px=165.0, k1=-0.2505
+        )
+        self.assertAlmostEqual(u_back, 207.0, delta=1e-6)
+        self.assertAlmostEqual(v_back, 95.0, delta=1e-6)
+
 
 if __name__ == "__main__":
     unittest.main()

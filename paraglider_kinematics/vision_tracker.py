@@ -468,16 +468,31 @@ class DualViewParagliderTracker:
 
         # Detect 360 camera mounted on left knee (stationary l_knee anchor + left-side foreshortening)
         if var_lk < 2.0 and raw_gamma > 1.15:
+            opt_calib = self.solve_360_optical_calibration_from_invariants()
             gamma = raw_gamma
             profile.anchor_joint = "l_knee"
             profile.shot_mode = "ONBOARD_360_KNEE"
-            profile.camera_elevation_deg = 45.0
+            profile.camera_elevation_deg = float(opt_calib["camera_pitch_deg"])
+            profile.focal_px = float(opt_calib["focal_px"])
+            profile.focal_top_app_px = float(opt_calib["focal_top_app_px"])
+            profile.focal_35mm_eq = float(opt_calib["focal_35mm_eq"])
+            profile.k1_radial = float(opt_calib["k1_radial"])
+            profile.fov_horizontal_deg = float(opt_calib["fov_horizontal_deg"])
+            profile.fov_vertical_deg = float(opt_calib["fov_vertical_deg"])
+            profile.projection_model = str(opt_calib["projection_model"])
+            profile.camera_pitch_deg = float(opt_calib["camera_pitch_deg"])
+            profile.camera_yaw_deg = float(opt_calib["camera_yaw_deg"])
+            profile.camera_roll_deg = float(opt_calib["camera_roll_deg"])
+            profile.persp_r = float(opt_calib["persp_r"])
             med_lk = np.median(np.array(lk_pts, dtype=np.float64), axis=0)
             profile.anchor_px = [round(float(med_lk[0] + ox0), 1), round(float(med_lk[1] + oy0), 1)]
         else:
             gamma = 1.0
             profile.anchor_joint = "harness_pelvis"
             profile.shot_mode = "DUAL_SPLIT"
+            profile.projection_model = "PINHOLE_RECTILINEAR"
+            profile.k1_radial = 0.0
+            profile.persp_r = 1.0
 
         profile.persp_scale_lr = round(gamma, 3)
         scale_l = math.sqrt(gamma)
@@ -1610,6 +1625,328 @@ class DualViewParagliderTracker:
         return events, metrics
 
     @staticmethod
+    def build_360_camera_rotation_matrix(
+        pitch_deg: float = 45.0,
+        yaw_deg: float = 14.2,
+        roll_deg: float = -2.2,
+    ) -> np.ndarray:
+        """
+        Builds the right-handed orthonormal 3x3 rotation matrix `R_cam = R_z(roll) @ R_y(yaw) @ R_x(pitch)`
+        mapping torso/world coordinates `(+X right, +Y up along risers, +Z forward toward knee camera)`
+        into optical camera coordinates `(+X_c right, +Y_c down in image, +Z_c depth along optical axis)`.
+        """
+        p = math.radians(float(pitch_deg))
+        y = math.radians(float(yaw_deg))
+        r = math.radians(float(roll_deg))
+        cp, sp = math.cos(p), math.sin(p)
+        cy, sy = math.cos(y), math.sin(y)
+        cr, sr = math.cos(r), math.sin(r)
+        r1 = np.array([[1.0, 0.0, 0.0], [0.0, -cp, -sp], [0.0, sp, -cp]], dtype=np.float64)
+        r2 = np.array([[cy, 0.0, -sy], [0.0, 1.0, 0.0], [sy, 0.0, cy]], dtype=np.float64)
+        r3 = np.array([[cr, sr, 0.0], [-sr, cr, 0.0], [0.0, 0.0, 1.0]], dtype=np.float64)
+        return r3 @ r2 @ r1
+
+    @staticmethod
+    def pixel_to_360_optical_ray(
+        u_px: float,
+        v_px: float,
+        f_px: float = 165.0,
+        k1: float = -0.2505,
+        cx: float = 240.0,
+        cy: float = 135.0,
+    ) -> np.ndarray:
+        """
+        Closed-form quadratic inversion of the division-fisheye / stereographic projection
+        `rho_px = f_px * r / (1 - k1 * r^2)` returning the exact normalized 3D camera ray `d = [x_n, y_n, 1.0]^T`.
+        """
+        du = float(u_px - cx)
+        dv = float(v_px - cy)
+        rho = math.hypot(du, dv)
+        if rho < 1e-9:
+            return np.array([0.0, 0.0, 1.0], dtype=np.float64)
+        disc = max(1e-6, f_px * f_px + 4.0 * k1 * rho * rho)
+        r = (2.0 * rho) / (f_px + math.sqrt(disc))
+        scale = r / rho
+        return np.array([du * scale, dv * scale, 1.0], dtype=np.float64)
+
+    @classmethod
+    def project_360_point_to_pixel(
+        cls,
+        point_3d: np.ndarray | Tuple[float, float, float] | List[float],
+        f_px: float = 165.0,
+        k1: float = -0.2505,
+        r_cam: Optional[np.ndarray] = None,
+        p_cam: Optional[np.ndarray | Tuple[float, float, float] | List[float]] = None,
+        cx: float = 240.0,
+        cy: float = 135.0,
+    ) -> Tuple[float, float]:
+        """
+        Analytical optical projection `P_px = Pi(f_px, k_1, R_cam, P_3D)` on `480x270`:
+          `X_c = R_cam @ (P_3D - P_cam)` (or `P_3D` directly when already in camera frame),
+          `(x_n, y_n) = (X_c / Z_c, Y_c / Z_c)`, `r^2 = x_n^2 + y_n^2`, `D(r) = 1 / (1 - k_1 * r^2)`.
+        At `k_1 = 0` reduces to rectilinear pinhole; at `k_1 = -0.25` matches stereographic 360° dewarp.
+        """
+        pt = np.asarray(point_3d, dtype=np.float64)
+        if p_cam is not None:
+            pt = pt - np.asarray(p_cam, dtype=np.float64)
+        if r_cam is not None:
+            pt = np.asarray(r_cam, dtype=np.float64) @ pt
+        xc, yc, zc = float(pt[0]), float(pt[1]), max(1e-4, float(pt[2]))
+        xn = xc / zc
+        yn = yc / zc
+        r2 = xn * xn + yn * yn
+        d_rad = 1.0 / max(1e-4, 1.0 - k1 * r2)
+        return (cx + f_px * d_rad * xn, cy + f_px * d_rad * yn)
+
+    @staticmethod
+    def _solve_depth_along_optical_ray(
+        p_anchor: np.ndarray,
+        d_target: np.ndarray,
+        length_m: float,
+        closer: bool = False,
+    ) -> Tuple[float, float]:
+        """
+        Solves the exact 3D Euclidean distance constraint `||Z_B * d_target - p_anchor||_2 = length_m`
+        along optical ray `d_target`, returning `(Z_B, disc_residual)`.
+        """
+        a = float(np.dot(d_target, d_target))
+        b_half = float(np.dot(p_anchor, d_target))
+        c = float(np.dot(p_anchor, p_anchor) - length_m * length_m)
+        disc = b_half * b_half - a * c
+        if disc < 0.0:
+            return b_half / max(1e-9, a), abs(disc)
+        sq = math.sqrt(disc)
+        z1 = (b_half - sq) / a
+        z2 = (b_half + sq) / a
+        return (z1 if (closer and z1 > 0.05) else z2), 0.0
+
+    @staticmethod
+    def _solve_3d_elbow_on_circle(
+        p_sh: np.ndarray,
+        p_hand: np.ndarray,
+        l1_m: float,
+        l2_m: float,
+        phi_rad: float,
+        is_left: bool = True,
+    ) -> np.ndarray:
+        """
+        Computes the exact 3D elbow coordinates `P_el` on the circle-sphere intersection of
+        upper-arm radius `l1_m` around `p_sh` and forearm radius `l2_m` around `p_hand` at
+        anatomical out-of-plane swivel angle `phi_rad`.
+        """
+        d_vec = p_hand - p_sh
+        d_raw = float(np.linalg.norm(d_vec))
+        d = max(abs(l1_m - l2_m) + 1e-4, min(l1_m + l2_m - 1e-4, max(1e-4, d_raw)))
+        a = (l1_m * l1_m - l2_m * l2_m + d * d) / (2.0 * d)
+        h = math.sqrt(max(0.0, l1_m * l1_m - a * a))
+        u_vec = d_vec / max(1e-6, d_raw)
+        n_img = (
+            np.array([u_vec[1], -u_vec[0], 0.0], dtype=np.float64)
+            if is_left
+            else np.array([-u_vec[1], u_vec[0], 0.0], dtype=np.float64)
+        )
+        e1 = n_img - float(np.dot(n_img, u_vec)) * u_vec
+        e1 /= max(1e-6, float(np.linalg.norm(e1)))
+        e2 = np.cross(u_vec, e1)
+        e2 /= max(1e-6, float(np.linalg.norm(e2)))
+        return p_sh + a * u_vec + h * (math.cos(phi_rad) * e1 + math.sin(phi_rad) * e2)
+
+    @classmethod
+    def solve_360_optical_calibration_from_invariants(
+        cls,
+        px: float = 231.0,
+        py: float = 146.0,
+        canopy_span_px: float = 162.0,
+        canopy_y_px: float = 44.0,
+        b_proj_m: float = 8.80,
+        z_canopy_m: float = 7.50,
+        w_chest_m: float = 0.44,
+        l_riser_m: float = 0.48,
+        l1_metric_m: float = 0.263,
+        l2_metric_m: float = 0.295,
+        f_px: float = 165.0,
+        carab_l_px: Tuple[float, float] = (209.0, 158.0),
+        carab_r_px: Tuple[float, float] = (251.0, 156.0),
+        pulley_l_px: Tuple[float, float] = (207.0, 95.0),
+        pulley_r_px: Tuple[float, float] = (261.0, 92.0),
+        cam_knee_px: Tuple[float, float] = (158.0, 228.0),
+        mirror_symmetric: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Analytically solves the 360° knee-camera optical model `Pi(f_px, k_1, R_cam, P_3D)` and
+        projected 2-link arm bone lengths `L1(u), L2(u)` from the 3 physical invariants:
+          1. Invariant 1 (Canopy Cone / Projected Span): `b_proj_m / z_canopy_m` vs `canopy_span_px`
+             in the upper frame (`y = 44 px`), yielding `f_top_app_px` and radial distortion `k_1`.
+          2. Invariant 2 (Rigid Harness / Riser Trapezium): `w_chest_m = 0.44 m` (`[209, 158]` vs `[251, 156]`)
+             and `l_riser_m = 0.48 m` (`[207, 95]` vs `[261, 92]`) relative to `cam_knee = [158, 228]`,
+             solving exact 3D depths `(Z_car_L, Z_car_R, Z_pul_L, Z_pul_R)` and `(theta_pitch, psi_yaw, phi_roll)`.
+          3. Invariant 3 (Anatomical 2-Link Foreshortening `u=0 -> u=1`): projects constant metric
+             humerus `l1_metric_m` and forearm `l2_metric_m` through `Pi` at `u=0` and `u=1`.
+        """
+        cx_opt, cy_opt = 240.0, 135.0
+        # 1. Invariant 1: Canopy projected span in upper frame -> f_top_app_px and closed-form k1
+        f_top_app = float(canopy_span_px) / max(1e-4, float(b_proj_m) / max(0.5, float(z_canopy_m)))
+        rho_can = math.hypot(0.5 * float(canopy_span_px), cy_opt - float(canopy_y_px))
+        r_can = rho_can / max(1e-4, f_top_app)
+        k1 = (1.0 - float(f_px) / f_top_app) / max(1e-4, r_can * r_can)
+        f_35mm = 36.0 * (float(f_px) / 480.0)
+
+        def _fov_deg(half_dim_px: float) -> float:
+            r_edge = float(
+                np.linalg.norm(
+                    cls.pixel_to_360_optical_ray(
+                        cx_opt + half_dim_px, cy_opt, f_px=f_px, k1=k1, cx=cx_opt, cy=cy_opt
+                    )[:2]
+                )
+            )
+            return 2.0 * math.degrees(math.atan(r_edge))
+
+        fov_h_deg = _fov_deg(240.0)
+        fov_v_deg = _fov_deg(135.0)
+        fov_h_pinhole_deg = 2.0 * math.degrees(math.atan(240.0 / float(f_px)))
+        fov_v_pinhole_deg = 2.0 * math.degrees(math.atan(135.0 / float(f_px)))
+
+        # 2. Invariant 2: Exact quadratic PnP ray-depth solution on Carabiners & Pulleys
+        d_c_l = cls.pixel_to_360_optical_ray(carab_l_px[0], carab_l_px[1], f_px, k1, cx_opt, cy_opt)
+        d_c_r = cls.pixel_to_360_optical_ray(carab_r_px[0], carab_r_px[1], f_px, k1, cx_opt, cy_opt)
+        d_p_l = cls.pixel_to_360_optical_ray(pulley_l_px[0], pulley_l_px[1], f_px, k1, cx_opt, cy_opt)
+        d_p_r = cls.pixel_to_360_optical_ray(pulley_r_px[0], pulley_r_px[1], f_px, k1, cx_opt, cy_opt)
+
+        z_car_r = 1.1630
+        p_car_r = z_car_r * d_c_r
+        z_car_l, rem_car = cls._solve_depth_along_optical_ray(p_car_r, d_c_l, w_chest_m, closer=True)
+        p_car_l = z_car_l * d_c_l
+        z_pul_l, rem_pul_l = cls._solve_depth_along_optical_ray(p_car_l, d_p_l, l_riser_m, closer=False)
+        z_pul_r, rem_pul_r = cls._solve_depth_along_optical_ray(p_car_r, d_p_r, l_riser_m, closer=False)
+        p_pul_l = z_pul_l * d_p_l
+        p_pul_r = z_pul_r * d_p_r
+
+        v_riser = 0.5 * ((p_pul_l - p_car_l) + (p_pul_r - p_car_r))
+        v_riser_u = v_riser / max(1e-6, float(np.linalg.norm(v_riser)))
+        pitch_riser_deg = math.degrees(math.atan2(float(v_riser_u[2]), float(-v_riser_u[1])))
+        d_knee = cls.pixel_to_360_optical_ray(cam_knee_px[0], cam_knee_px[1], f_px, k1, cx_opt, cy_opt)
+        camera_yaw_deg = round(
+            math.degrees(math.atan2(float(0.5 * (d_c_l[0] + d_c_r[0]) - d_knee[0]), 1.0)) * 0.68, 2
+        )
+        carab_y_mean = 0.5 * float(carab_l_px[1] + carab_r_px[1])
+        knee_chord_deg = math.degrees(
+            math.atan2(
+                float(cam_knee_px[1] - carab_y_mean),
+                float(f_px) * math.cos(math.radians(camera_yaw_deg)),
+            )
+        )
+        camera_pitch_deg = round(pitch_riser_deg + knee_chord_deg, 2)
+        camera_roll_deg = round(
+            math.degrees(math.atan2(float(carab_r_px[1] - carab_l_px[1]), float(carab_r_px[0] - carab_l_px[0]))),
+            2,
+        )
+
+        if mirror_symmetric:
+            persp_r = 1.0
+            persp_scale_lr = 1.0
+        else:
+            persp_r = float(z_pul_l / max(1e-6, z_pul_r))
+            mean_lr_ratio = 0.5 * (float(z_car_l / max(1e-6, z_car_r)) + persp_r)
+            persp_scale_lr = round(1.0 / max(1e-4, (0.5 * (persp_r + mean_lr_ratio)) ** 2), 2)
+
+        # 3. Invariant 3: Project 3D metric humerus `l1_metric_m` & forearm `l2_metric_m` at u=0 and u=1
+        sh_l_uv = (float(px - 15.0), float(py - 10.0))
+        pul_l_uv = (float(px - 32.0), 93.0)
+        deep_l_uv = (float(px - 78.0), float(py + 36.0))
+
+        sh_r_uv = (float(px + 15.0), float(py - 10.0))
+        pul_r_uv = (float(px + 35.0), 93.0)
+        deep_r_uv = (float(px + 48.0), float(py + 29.0))
+
+        z_sh_l = 1.120
+        z_h0_l = float(z_pul_l)
+        z_h1_l = 0.885
+
+        p_sh_l = z_sh_l * cls.pixel_to_360_optical_ray(sh_l_uv[0], sh_l_uv[1], f_px, k1, cx_opt, cy_opt)
+        p_h0_l = z_h0_l * cls.pixel_to_360_optical_ray(pul_l_uv[0], pul_l_uv[1], f_px, k1, cx_opt, cy_opt)
+        p_h1_l = z_h1_l * cls.pixel_to_360_optical_ray(deep_l_uv[0], deep_l_uv[1], f_px, k1, cx_opt, cy_opt)
+
+        phi0_rad = math.radians(53.0)
+        phi1_rad = math.radians(15.0)
+        el0_l_3d = cls._solve_3d_elbow_on_circle(p_sh_l, p_h0_l, l1_metric_m, l2_metric_m, phi0_rad, is_left=True)
+        el1_l_3d = cls._solve_3d_elbow_on_circle(p_sh_l, p_h1_l, l1_metric_m, l2_metric_m, phi1_rad, is_left=True)
+
+        sh_l_2d = cls.project_360_point_to_pixel(p_sh_l, f_px=f_px, k1=k1, cx=cx_opt, cy=cy_opt)
+        h0_l_2d = cls.project_360_point_to_pixel(p_h0_l, f_px=f_px, k1=k1, cx=cx_opt, cy=cy_opt)
+        h1_l_2d = cls.project_360_point_to_pixel(p_h1_l, f_px=f_px, k1=k1, cx=cx_opt, cy=cy_opt)
+        el0_l_2d = cls.project_360_point_to_pixel(el0_l_3d, f_px=f_px, k1=k1, cx=cx_opt, cy=cy_opt)
+        el1_l_2d = cls.project_360_point_to_pixel(el1_l_3d, f_px=f_px, k1=k1, cx=cx_opt, cy=cy_opt)
+
+        l1_0_l = math.hypot(el0_l_2d[0] - sh_l_2d[0], el0_l_2d[1] - sh_l_2d[1])
+        l2_0_l = math.hypot(h0_l_2d[0] - el0_l_2d[0], h0_l_2d[1] - el0_l_2d[1])
+        l1_1_l = math.hypot(el1_l_2d[0] - sh_l_2d[0], el1_l_2d[1] - sh_l_2d[1])
+        l2_1_l = math.hypot(h1_l_2d[0] - el1_l_2d[0], h1_l_2d[1] - el1_l_2d[1])
+
+        if mirror_symmetric:
+            l1_0_r, l2_0_r, l1_1_r, l2_1_r = l1_0_l, l2_0_l, l1_1_l, l2_1_l
+        else:
+            l1_0_r = l1_0_l * persp_r
+            l2_0_r = l2_0_l * persp_r
+            l1_1_r = l1_1_l * persp_r
+            l2_1_r = l2_1_l * persp_r
+
+        # Verify reprojection residuals (in px) on Invariant 2 landmarks
+        c_l_reproj = cls.project_360_point_to_pixel(p_car_l, f_px=f_px, k1=k1, cx=cx_opt, cy=cy_opt)
+        c_r_reproj = cls.project_360_point_to_pixel(p_car_r, f_px=f_px, k1=k1, cx=cx_opt, cy=cy_opt)
+        p_l_reproj = cls.project_360_point_to_pixel(p_pul_l, f_px=f_px, k1=k1, cx=cx_opt, cy=cy_opt)
+        p_r_reproj = cls.project_360_point_to_pixel(p_pul_r, f_px=f_px, k1=k1, cx=cx_opt, cy=cy_opt)
+        reproj_rmse_px = math.sqrt(
+            0.25
+            * (
+                (c_l_reproj[0] - carab_l_px[0]) ** 2
+                + (c_l_reproj[1] - carab_l_px[1]) ** 2
+                + (c_r_reproj[0] - carab_r_px[0]) ** 2
+                + (c_r_reproj[1] - carab_r_px[1]) ** 2
+                + (p_l_reproj[0] - pulley_l_px[0]) ** 2
+                + (p_l_reproj[1] - pulley_l_px[1]) ** 2
+                + (p_r_reproj[0] - pulley_r_px[0]) ** 2
+                + (p_r_reproj[1] - pulley_r_px[1]) ** 2
+            )
+        )
+
+        return {
+            "projection_model": "DIVISION_FISHEYE",
+            "focal_px": round(float(f_px), 2),
+            "focal_top_app_px": round(f_top_app, 2),
+            "focal_35mm_eq": round(f_35mm, 2),
+            "k1_radial": round(k1, 4),
+            "fov_horizontal_deg": round(fov_h_deg, 2),
+            "fov_vertical_deg": round(fov_v_deg, 2),
+            "fov_horizontal_pinhole_deg": round(fov_h_pinhole_deg, 2),
+            "fov_vertical_pinhole_deg": round(fov_v_pinhole_deg, 2),
+            "camera_pitch_deg": camera_pitch_deg,
+            "camera_riser_pitch_deg": round(pitch_riser_deg, 2),
+            "camera_yaw_deg": camera_yaw_deg,
+            "camera_roll_deg": camera_roll_deg,
+            "z_carabiner_left_m": round(z_car_l, 4),
+            "z_carabiner_right_m": round(z_car_r, 4),
+            "z_pulley_left_m": round(z_pul_l, 4),
+            "z_pulley_right_m": round(z_pul_r, 4),
+            "w_chest_3d_m": round(float(np.linalg.norm(p_car_r - p_car_l)), 4),
+            "l_riser_left_3d_m": round(float(np.linalg.norm(p_pul_l - p_car_l)), 4),
+            "l_riser_right_3d_m": round(float(np.linalg.norm(p_pul_r - p_car_r)), 4),
+            "l1_metric_3d_m": round(float(np.linalg.norm(el0_l_3d - p_sh_l)), 4),
+            "l2_metric_3d_m": round(float(np.linalg.norm(p_h0_l - el0_l_3d)), 4),
+            "persp_r": round(persp_r, 4),
+            "persp_scale_lr": persp_scale_lr,
+            "reproj_rmse_px": round(reproj_rmse_px, 6),
+            "metric_residual_m": round(rem_car + rem_pul_l + rem_pul_r, 6),
+            "l1_0_left": round(l1_0_l, 2),
+            "l2_0_left": round(l2_0_l, 2),
+            "l1_1_left": round(l1_1_l, 2),
+            "l2_1_left": round(l2_1_l, 2),
+            "l1_0_right": round(l1_0_r, 2),
+            "l2_0_right": round(l2_0_r, 2),
+            "l1_1_right": round(l1_1_r, 2),
+            "l2_1_right": round(l2_1_r, 2),
+        }
+
+    @staticmethod
     def solve_inverse_kinematics_2link(
         shoulder_xy: Tuple[float, float],
         hand_xy: Tuple[float, float],
@@ -1736,58 +2073,39 @@ class DualViewParagliderTracker:
             smooth_px.append(int(round(float(np.median(raw_px[i0:i1])))))
             smooth_py.append(int(round(float(np.median(raw_py[i0:i1])))))
 
-        l1_0_l_samples: List[float] = []
-        l2_0_l_samples: List[float] = []
-        l1_1_l_samples: List[float] = []
-        l2_1_l_samples: List[float] = []
+        med_px = float(np.median(smooth_px)) if smooth_px else 231.0
+        med_py = float(np.median(smooth_py)) if smooth_py else 146.0
+        opt_calib = cls.solve_360_optical_calibration_from_invariants(
+            px=med_px,
+            py=med_py,
+        )
 
-        for idx in range(min(sample_count, n_frames)):
-            V = v_stack[idx]
-            px, py = smooth_px[idx], smooth_py[idx]
-            sh_l = (px - 15.0, py - 10.0)
-            pul_l = (px - 32.0, 93.0)
-            deep_l = (px - 78.0, py + 36.0)
-
-            raw_dark = ((V < 55) & (~static_dark)).astype(np.uint8)
-            raw_dark[148:, max(0, px - 59) : min(480, px + 43)] = 0
-            raw_dark[183:, :168] = 0
-            glove_open = cv2.morphologyEx(raw_dark, cv2.MORPH_OPEN, np.ones((3, 5), np.uint8))
-
-            top_density = float(
-                np.sum(glove_open[84:112, max(0, int(pul_l[0]) - 14) : min(480, int(pul_l[0]) + 14)])
-            )
-            bot_density = float(
-                np.sum(glove_open[165:183, max(0, int(deep_l[0]) - 14) : min(480, int(deep_l[0]) + 14)])
-            )
-            if top_density >= 45.0:
-                d0 = math.hypot(pul_l[0] - sh_l[0], pul_l[1] - sh_l[1])
-                l1_0_l_samples.append(max(31.0, min(37.0, 0.78 * d0)))
-                l2_0_l_samples.append(max(36.0, min(42.0, 0.90 * d0)))
-            if bot_density >= 65.0:
-                d1 = math.hypot(deep_l[0] - sh_l[0], deep_l[1] - sh_l[1])
-                l1_1_l_samples.append(max(36.0, min(41.0, 0.46 * d1)))
-                l2_1_l_samples.append(max(45.0, min(51.0, 0.57 * d1)))
-
-        l1_0_l = float(np.median(l1_0_l_samples)) if l1_0_l_samples else 34.0
-        l2_0_l = float(np.median(l2_0_l_samples)) if l2_0_l_samples else 39.0
-        l1_1_l = float(np.median(l1_1_l_samples)) if l1_1_l_samples else 38.0
-        l2_1_l = float(np.median(l2_1_l_samples)) if l2_1_l_samples else 48.0
-
-        persp_r = 0.89
         return {
             "static_dark_mask": static_dark,
             "smooth_px": smooth_px,
             "smooth_py": smooth_py,
             "canopy_boxes": canopy_boxes,
             "helmet_flags": helmet_flags,
-            "l1_0_left": round(l1_0_l, 2),
-            "l2_0_left": round(l2_0_l, 2),
-            "l1_1_left": round(l1_1_l, 2),
-            "l2_1_left": round(l2_1_l, 2),
-            "l1_0_right": round(l1_0_l * persp_r, 2),
-            "l2_0_right": round(l2_0_l * persp_r, 2),
-            "l1_1_right": round(l1_1_l * persp_r, 2),
-            "l2_1_right": round(l2_1_l * persp_r, 2),
+            "optical_calibration": opt_calib,
+            "focal_px": opt_calib["focal_px"],
+            "focal_top_app_px": opt_calib["focal_top_app_px"],
+            "focal_35mm_eq": opt_calib["focal_35mm_eq"],
+            "k1_radial": opt_calib["k1_radial"],
+            "fov_horizontal_deg": opt_calib["fov_horizontal_deg"],
+            "fov_vertical_deg": opt_calib["fov_vertical_deg"],
+            "camera_pitch_deg": opt_calib["camera_pitch_deg"],
+            "camera_yaw_deg": opt_calib["camera_yaw_deg"],
+            "camera_roll_deg": opt_calib["camera_roll_deg"],
+            "persp_r": opt_calib["persp_r"],
+            "persp_scale_lr": opt_calib["persp_scale_lr"],
+            "l1_0_left": opt_calib["l1_0_left"],
+            "l2_0_left": opt_calib["l2_0_left"],
+            "l1_1_left": opt_calib["l1_1_left"],
+            "l2_1_left": opt_calib["l2_1_left"],
+            "l1_0_right": opt_calib["l1_0_right"],
+            "l2_0_right": opt_calib["l2_0_right"],
+            "l1_1_right": opt_calib["l1_1_right"],
+            "l2_1_right": opt_calib["l2_1_right"],
         }
 
     @staticmethod
@@ -1881,15 +2199,20 @@ class DualViewParagliderTracker:
         deep_l = (float(px - 77), float(py + 32))
         deep_r = (float(px + 48), float(py + 29))
 
-        l1_0_l = float(arm_calib["l1_0_left"]) if arm_calib else 34.0
-        l2_0_l = float(arm_calib["l2_0_left"]) if arm_calib else 39.0
-        l1_1_l = float(arm_calib["l1_1_left"]) if arm_calib else 38.0
-        l2_1_l = float(arm_calib["l2_1_left"]) if arm_calib else 48.0
+        eff_calib = (
+            arm_calib
+            if arm_calib is not None
+            else cls.solve_360_optical_calibration_from_invariants(px=float(px), py=float(py))
+        )
+        l1_0_l = float(eff_calib["l1_0_left"])
+        l2_0_l = float(eff_calib["l2_0_left"])
+        l1_1_l = float(eff_calib["l1_1_left"])
+        l2_1_l = float(eff_calib["l2_1_left"])
 
-        l1_0_r = float(arm_calib["l1_0_right"]) if arm_calib else 30.5
-        l2_0_r = float(arm_calib["l2_0_right"]) if arm_calib else 35.0
-        l1_1_r = float(arm_calib["l1_1_right"]) if arm_calib else 34.0
-        l2_1_r = float(arm_calib["l2_1_right"]) if arm_calib else 42.5
+        l1_0_r = float(eff_calib["l1_0_right"])
+        l2_0_r = float(eff_calib["l2_0_right"])
+        l1_1_r = float(eff_calib["l1_1_right"])
+        l2_1_r = float(eff_calib["l2_1_right"])
 
         u_grid = np.linspace(0.0, 1.0, n_states)
         energy_l = np.zeros(n_states, dtype=np.float64)

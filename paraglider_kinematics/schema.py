@@ -23,6 +23,45 @@ class WingGeometrySpec:
 
 
 @dataclass
+class ShotCalibrationProfile:
+    """Per-shot appearance, camera-mount, and perspective calibration profile learned from N sampled frames."""
+
+    shot_id: int = 0
+    start_frame: int = 0
+    end_frame: int = 0
+    shot_mode: str = "DUAL_SPLIT"
+    anchor_joint: str = "l_knee"
+    anchor_px: List[float] = field(default_factory=lambda: [0.0, 0.0])
+    persp_scale_lr: float = 1.0
+    pulley_y_left_px: float = 0.0
+    pulley_y_right_px: float = 0.0
+    travel_left_px: float = 100.0
+    travel_right_px: float = 100.0
+    neutral_torso_lean_deg: float = 0.0
+    nominal_span_px: float = 176.0
+    nominal_line_len_px: float = 183.6
+    camera_elevation_deg: float = 0.0
+    focal_px: float = 165.0
+    focal_top_app_px: float = 138.07
+    focal_35mm_eq: float = 12.38
+    k1_radial: float = -0.2505
+    fov_horizontal_deg: float = 142.06
+    fov_vertical_deg: float = 92.24
+    projection_model: str = "DIVISION_FISHEYE"
+    camera_pitch_deg: float = 45.0
+    camera_yaw_deg: float = 14.2
+    camera_roll_deg: float = -2.2
+    persp_r: float = 0.89
+    canopy_rgb_center: List[float] = field(default_factory=lambda: [232.0, 95.0, 35.0])
+    jacket_rgb_center: List[float] = field(default_factory=lambda: [35.0, 210.0, 250.0])
+    hip_rgb_center: List[float] = field(default_factory=lambda: [240.0, 50.0, 210.0])
+    glove_rgb_center: List[float] = field(default_factory=lambda: [245.0, 200.0, 45.0])
+    elbow_rgb_center: List[float] = field(default_factory=lambda: [65.0, 220.0, 95.0])
+    head_rgb_center: List[float] = field(default_factory=lambda: [240.0, 244.0, 250.0])
+    static_mask_ratio: float = 0.0
+
+
+@dataclass
 class FrameObservation:
     """Per-frame kinematic state extracted by Computer Vision from Dual-ROI video."""
 
@@ -57,6 +96,11 @@ class FrameObservation:
     shoulder_roll_deg: float = 0.0
     torso_lean_deg: float = 0.0
     pip_rect_px: Optional[List[int]] = None
+    # Per-shot auto-calibration metadata
+    shot_id: int = 0
+    shot_mode: str = "DUAL_SPLIT"
+    persp_scale_lr: float = 1.0
+    anchor_joint: str = "none"
 
 
 @dataclass
@@ -124,6 +168,7 @@ class ManeuverKinematicsTrace:
     events: List[CommandTimingEvent]
     frames: List[FrameObservation]
     camera_mode: str = "side_chase"
+    shot_profiles: List[ShotCalibrationProfile] = field(default_factory=list)
 
     def to_dict(self) -> Dict:
         return asdict(self)
@@ -140,6 +185,7 @@ class ManeuverKinematicsTrace:
         pm = PhaseLagMetrics(**d.get("phase_metrics", {}))
         events = [CommandTimingEvent(**e) for e in d.get("events", [])]
         frames = [FrameObservation(**f) for f in d.get("frames", [])]
+        shot_profiles = [ShotCalibrationProfile(**sp) for sp in d.get("shot_profiles", [])]
         return cls(
             schema_version=d.get("schema_version", "1.0.0"),
             source_video_url=d.get("source_video_url", ""),
@@ -153,6 +199,7 @@ class ManeuverKinematicsTrace:
             events=events,
             frames=frames,
             camera_mode=d.get("camera_mode", "side_chase"),
+            shot_profiles=shot_profiles,
         )
 
     @classmethod

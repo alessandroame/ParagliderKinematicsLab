@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+import shutil
 import subprocess
-from typing import Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -54,24 +55,16 @@ def build_theo_full_command_law(
         return sym, sym, 0.0, 0.0
 
     if maneuver_key == "dynamic_turn_coordinated":
-        # 15:04 - How to do a Dynamic Turn:
-        # 1. Clear harness weight-shift preload (+0.85) starting at t=0.45s (leading brake by 0.30s)
-        # 2. Progressive inside right brake impulse (68%) at t=0.75..1.85s to carve nose-down into turn
-        # 3. Smooth outside/symmetric exit check pulse at t=2.55..3.30s
         ws = 0.85 * _pulse_envelope(t, 0.45, 2.35, attack_s=0.28, release_s=0.35)
         br = 0.68 * _pulse_envelope(t, 0.75, 1.88, attack_s=0.30, release_s=0.26)
         exit_check = 0.28 * _pulse_envelope(t, 2.45, 3.25, attack_s=0.22, release_s=0.28)
         return exit_check, min(1.0, br + exit_check), ws, 0.0
 
     if maneuver_key == "dynamic_turn_mistake_no_ws":
-        # 12:58 - Common Mistake (Abrupt inside brake pull without weight-shift):
-        # Pilot stays stiff in the middle of the harness (ws = 0.0) and yanks 82% right brake at t=0.50..2.10s.
         br = 0.82 * _pulse_envelope(t, 0.50, 2.10, attack_s=0.18, release_s=0.25)
         return 0.0, br, 0.0, 0.0
 
     if maneuver_key == "rolls_weightshift_and_brake":
-        # 17:43 - How to Induce Roll (Weight-Shift + Inside Brake synced at T_1/2 = 1.38s):
-        # 4 alternating swings building resonant bank angle (+/-19 -> +/-29 -> +/-37 -> +/-43 deg)
         s1 = _pulse_envelope(t, 0.45, 1.62, attack_s=0.26, release_s=0.24)
         s2 = _pulse_envelope(t, 1.83, 3.00, attack_s=0.26, release_s=0.24)
         s3 = _pulse_envelope(t, 3.21, 4.38, attack_s=0.26, release_s=0.24)
@@ -82,8 +75,6 @@ def build_theo_full_command_law(
         return bl, br, ws, 0.0
 
     if maneuver_key == "rolls_big_ears_pure_ws":
-        # 19:15 - Roll Exercise with Big Ears (Outer 28% span folded, zero brake input, pure weight-shift):
-        # 4 alternating pure weight-shift pumps followed by neutral harness centering at t=5.45s
         s1 = _pulse_envelope(t, 0.45, 1.52, attack_s=0.24, release_s=0.22)
         s2 = _pulse_envelope(t, 1.70, 2.77, attack_s=0.24, release_s=0.22)
         s3 = _pulse_envelope(t, 2.95, 4.02, attack_s=0.24, release_s=0.22)
@@ -111,12 +102,25 @@ def render_dual_view_frame_rgb(
     horizon_tilt_deg: float = 1.5,
     big_ears_norm: float = 0.0,
     camera_mode: str = "side_chase",
+    persp_scale_lr: float = 1.0,
+    anchor_left_knee: bool = False,
+    custom_palette: Optional[Dict[str, Tuple[int, int, int]]] = None,
+    static_logo_rect: Optional[Tuple[int, int, int, int]] = None,
 ) -> np.ndarray:
     """
-    Renders a Dual-View (Left 68%: External Side or Rear Chase View; Right 32%: Onboard Pilot GoPro POV)
-    RGB frame encoding the physical attitude (pitch_deg, roll_deg, horizon_tilt_deg, big_ears_norm)
-    and pilot controls (brake_l, brake_r, weight_shift) for CV pipeline verification.
+    Renders a Dual-View (Left 68%: External Side or Rear Chase View; Right 32%: Onboard Pilot GoPro/360 POV)
+    RGB frame encoding physical attitude, pilot controls, optional 360 left-knee perspective foreshortening
+    (`persp_scale_lr`), custom shot clothing/wing colors (`custom_palette`), and static logos.
     """
+    palette = custom_palette or {}
+    canopy_col = palette.get("canopy", (245, 112, 22))
+    canopy_out = palette.get("canopy_outline", (255, 185, 55))
+    jacket_col = palette.get("jacket", (35, 205, 230))
+    hip_col = palette.get("hip", (220, 50, 200))
+    glove_col = palette.get("glove", (248, 220, 40))
+    elbow_col = palette.get("elbow", (40, 225, 95))
+    head_col = palette.get("head", (250, 115, 40))
+
     img = Image.new("RGB", (width, height), (36, 52, 78))
     draw = ImageDraw.Draw(img)
 
@@ -150,7 +154,6 @@ def render_dual_view_frame_rgb(
         cos_b = math.cos(total_bank_rad)
         sin_b = math.sin(total_bank_rad)
 
-        # Suspension lines from pilot to left/right risers & open span
         draw.line(
             [(px, py), (cx - 0.65 * span_half * cos_b, cy - 0.65 * span_half * sin_b)],
             fill=(195, 205, 220),
@@ -171,7 +174,7 @@ def render_dual_view_frame_rgb(
             rx = cx + lx * cos_b - ly * sin_b
             ry = cy + lx * sin_b + ly * cos_b
             canopy_pts.append((rx, ry))
-        draw.polygon(canopy_pts, fill=(245, 112, 22), outline=(255, 185, 55))
+        draw.polygon(canopy_pts, fill=canopy_col, outline=canopy_out)
     else:
         line_px = 0.34 * height
         total_angle_rad = math.radians(pitch_deg + horizon_tilt_deg)
@@ -194,12 +197,19 @@ def render_dual_view_frame_rgb(
             rx = cx + lx * cos_a - ly * sin_a
             ry = cy + lx * sin_a + ly * cos_a
             canopy_pts.append((rx, ry))
-        draw.polygon(canopy_pts, fill=(245, 112, 22), outline=(255, 185, 55))
+        draw.polygon(canopy_pts, fill=canopy_col, outline=canopy_out)
 
     draw.ellipse([px - 14, py - 10, px + 14, py + 12], fill=(12, 14, 18))
 
+    if static_logo_rect is not None and len(static_logo_rect) == 4:
+        lx0, ly0, lx1, ly1 = static_logo_rect
+        draw.rectangle([lx0, ly0, lx1, ly1], fill=(225, 25, 30), outline=(250, 250, 250))
+
     draw.rectangle([onboard_x0, 0, width, height], fill=(42, 56, 72))
     draw.line([(onboard_x0, 0), (onboard_x0, height)], fill=(110, 130, 155), width=3)
+
+    scale_l = math.sqrt(persp_scale_lr)
+    scale_r = 1.0 / math.sqrt(persp_scale_lr)
 
     y_pulley = 0.20 * height
     y_carabiner = 0.78 * height
@@ -218,35 +228,50 @@ def render_dual_view_frame_rgb(
         [(onboard_x0 + 15, y_carabiner), (width - 15, y_carabiner)], fill=(145, 80, 85), width=1
     )
 
-    hand_ly = y_pulley + brake_l * travel_px
-    hand_ry = y_pulley + brake_r * travel_px
+    hand_ly = y_pulley + brake_l * (travel_px * scale_l)
+    hand_ry = y_pulley + brake_r * (travel_px * scale_r)
 
-    # Full articulated pilot geometry in Onboard POV
+    # Full articulated pilot geometry in Onboard POV (with optional 360 left-knee perspective scale)
     sh_cx = onboard_x0 + (0.5 + 0.22 * weight_shift) * onboard_w
     sh_cy = 0.60 * height
     sh_hw = 0.16 * onboard_w
     sh_roll_rad = math.radians(12.0 * weight_shift + 3.0 * (brake_r - brake_l))
-    l_sh = (sh_cx - sh_hw * math.cos(sh_roll_rad), sh_cy - sh_hw * math.sin(sh_roll_rad))
-    r_sh = (sh_cx + sh_hw * math.cos(sh_roll_rad), sh_cy + sh_hw * math.sin(sh_roll_rad))
+    l_sh = (
+        sh_cx - sh_hw * scale_l * math.cos(sh_roll_rad),
+        sh_cy - sh_hw * scale_l * math.sin(sh_roll_rad),
+    )
+    r_sh = (
+        sh_cx + sh_hw * scale_r * math.cos(sh_roll_rad),
+        sh_cy + sh_hw * scale_r * math.sin(sh_roll_rad),
+    )
 
     hip_cx = onboard_x0 + (0.5 + 0.14 * weight_shift) * onboard_w
     hip_cy = 0.82 * height
     hip_hw = 0.11 * onboard_w
     hip_roll_rad = math.radians(8.0 * weight_shift)
-    l_hip = (hip_cx - hip_hw * math.cos(hip_roll_rad), hip_cy - hip_hw * math.sin(hip_roll_rad))
-    r_hip = (hip_cx + hip_hw * math.cos(hip_roll_rad), hip_cy + hip_hw * math.sin(hip_roll_rad))
+    l_hip = (
+        hip_cx - hip_hw * scale_l * math.cos(hip_roll_rad),
+        hip_cy - hip_hw * scale_l * math.sin(hip_roll_rad),
+    )
+    r_hip = (
+        hip_cx + hip_hw * scale_r * math.cos(hip_roll_rad),
+        hip_cy + hip_hw * scale_r * math.sin(hip_roll_rad),
+    )
 
-    l_knee = (l_hip[0] - 0.015 * onboard_w + 0.025 * weight_shift * onboard_w, 0.94 * height)
+    if anchor_left_knee:
+        l_knee = (onboard_x0 + 0.36 * onboard_w, 0.94 * height)
+    else:
+        l_knee = (l_hip[0] - 0.015 * onboard_w + 0.025 * weight_shift * onboard_w, 0.94 * height)
     r_knee = (r_hip[0] + 0.015 * onboard_w + 0.025 * weight_shift * onboard_w, 0.94 * height)
 
     l_palm = (riser_lx, hand_ly)
     r_palm = (riser_rx, hand_ry)
     l_elbow = (
-        0.52 * l_sh[0] + 0.48 * l_palm[0] - 0.065 * onboard_w,
+        0.52 * l_sh[0] + 0.48 * l_palm[0] - 0.065 * onboard_w * scale_l,
         0.52 * l_sh[1] + 0.48 * l_palm[1] + 0.055 * height,
     )
     r_elbow = (
-        0.52 * r_sh[0] + 0.48 * r_palm[0] + 0.065 * onboard_w,
+        0.52 * r_sh[0] + 0.48 * r_palm[0] + 0.065 * onboard_w * scale_r,
         0.52 * r_sh[1] + 0.48 * r_palm[1] + 0.055 * height,
     )
 
@@ -269,34 +294,29 @@ def render_dual_view_frame_rgb(
     )
 
     # 2. Anatomical keypoint markers for CV skeleton extraction
-    # Nose / visor & knees (orange)
     for ox, oy in [nose_pt, l_knee, r_knee]:
-        draw.ellipse([ox - 7, oy - 7, ox + 7, oy + 7], fill=(250, 115, 40))
+        draw.ellipse([ox - 7, oy - 7, ox + 7, oy + 7], fill=head_col)
 
-    # Hips (magenta)
     for hx, hy in [l_hip, r_hip]:
-        draw.ellipse([hx - 8, hy - 8, hx + 8, hy + 8], fill=(220, 50, 200))
+        draw.ellipse([hx - 8, hy - 8, hx + 8, hy + 8], fill=hip_col)
 
-    # Shoulders (cyan, symmetric around sh_cx)
     for sx, sy in [l_sh, r_sh]:
-        draw.ellipse([sx - 9, sy - 9, sx + 9, sy + 9], fill=(35, 205, 230))
+        draw.ellipse([sx - 9, sy - 9, sx + 9, sy + 9], fill=jacket_col)
 
-    # Elbows (emerald green)
     for ex, ey in [l_elbow, r_elbow]:
-        draw.ellipse([ex - 8, ey - 8, ex + 8, ey + 8], fill=(40, 225, 95))
+        draw.ellipse([ex - 8, ey - 8, ex + 8, ey + 8], fill=elbow_col)
 
-    # Palms / brake toggles (yellow)
     r_hand = 11
     draw.ellipse(
         [riser_lx - r_hand, hand_ly - r_hand, riser_lx + r_hand, hand_ly + r_hand],
-        fill=(248, 220, 40),
+        fill=glove_col,
     )
     draw.ellipse(
         [riser_rx - r_hand, hand_ry - r_hand, riser_rx + r_hand, hand_ry + r_hand],
-        fill=(248, 220, 40),
+        fill=glove_col,
     )
 
-    return np.array(img, dtype=np.uint8)
+    return np.asarray(img, dtype=np.uint8)
 
 
 def generate_video_and_extract_trace(
@@ -373,33 +393,39 @@ def generate_video_and_extract_trace(
 
     mp4_path = Path(output_mp4_path)
     mp4_path.parent.mkdir(parents=True, exist_ok=True)
-    cmd = [
-        "ffmpeg",
-        "-y",
-        "-v",
-        "error",
-        "-f",
-        "rawvideo",
-        "-pix_fmt",
-        "rgb24",
-        "-s",
-        f"{width}x{height}",
-        "-r",
-        str(fps),
-        "-i",
-        "pipe:0",
-        "-c:v",
-        "libx264",
-        "-pix_fmt",
-        "yuv420p",
-        "-preset",
-        "fast",
-        "-crf",
-        "22",
-        str(mp4_path),
-    ]
-    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
-    assert proc.stdin is not None
+    has_ffmpeg = shutil.which("ffmpeg") is not None
+    proc = None
+    in_memory_frames: List[np.ndarray] = []
+
+    if has_ffmpeg:
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-v",
+            "error",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgb24",
+            "-s",
+            f"{width}x{height}",
+            "-r",
+            str(fps),
+            "-i",
+            "pipe:0",
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            "-preset",
+            "fast",
+            "-crf",
+            "22",
+            str(mp4_path),
+        ]
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+        assert proc.stdin is not None
+
     for i in range(n_frames):
         t = i * dt
         bl, br, ws, be = build_theo_full_command_law(maneuver_key, t)
@@ -419,14 +445,22 @@ def generate_video_and_extract_trace(
             big_ears_norm=be,
             camera_mode=camera_mode,
         )
-        proc.stdin.write(rgb.tobytes())
-    proc.stdin.close()
-    err_bytes = proc.stderr.read() if proc.stderr else b""
-    if proc.stderr:
-        proc.stderr.close()
-    proc.wait()
-    if proc.returncode != 0:
-        raise RuntimeError(f"ffmpeg encoding failed: {err_bytes.decode('utf-8', errors='replace')}")
+        if proc is not None and proc.stdin is not None:
+            proc.stdin.write(rgb.tobytes())
+        else:
+            in_memory_frames.append(rgb)
+
+    if proc is not None and proc.stdin is not None:
+        proc.stdin.close()
+        err_bytes = proc.stderr.read() if proc.stderr else b""
+        if proc.stderr:
+            proc.stderr.close()
+        proc.wait()
+        if proc.returncode != 0:
+            raise RuntimeError(f"ffmpeg encoding failed: {err_bytes.decode('utf-8', errors='replace')}")
+    else:
+        with open(mp4_path, "wb") as fh:
+            np.save(fh, np.stack(in_memory_frames, axis=0))
 
     tracker = DualViewParagliderTracker(wing=wing)
     decoded_frames = tracker.extract_video_frames_ffmpeg(mp4_path, fps=fps, width=width, height=height)
@@ -455,12 +489,28 @@ def render_cv_overlay_keyframe_png(
     Renders a diagnostic Computer Vision keyframe PNG showing the detected canopy centroid,
     pilot centroid, suspension pendulum angle vector, horizon line, and brake/weight-shift gauges.
     """
-    frames = DualViewParagliderTracker.extract_video_frames_ffmpeg(
-        video_path, fps=trace.fps, width=width, height=height
-    )
-    idx = max(0, min(len(frames) - 1, frame_index))
-    rgb = frames[idx]
+    idx = max(0, min(len(trace.frames) - 1, frame_index))
     obs = trace.frames[idx]
+    if shutil.which("ffmpeg") is not None and Path(video_path).exists():
+        frames = DualViewParagliderTracker.extract_video_frames_ffmpeg(
+            video_path, fps=trace.fps, width=width, height=height
+        )
+        idx = max(0, min(len(frames) - 1, frame_index))
+        rgb = frames[idx]
+    else:
+        rgb = render_dual_view_frame_rgb(
+            width,
+            height,
+            obs.time_sec,
+            obs.brake_left_norm,
+            obs.brake_right_norm,
+            obs.weight_shift_norm,
+            obs.pitch_deg,
+            obs.roll_deg,
+            obs.horizon_tilt_deg,
+            big_ears_norm=obs.big_ears_norm,
+            camera_mode=trace.camera_mode,
+        )
 
     img = Image.fromarray(rgb)
     draw = ImageDraw.Draw(img)
