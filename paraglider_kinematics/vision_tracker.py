@@ -11,6 +11,15 @@ try:
 except ImportError:  # pragma: no cover
     cv2 = None
 
+try:
+    import mediapipe as mp
+    from mediapipe.tasks import python as mp_python
+    from mediapipe.tasks.python import vision as mp_vision
+except ImportError:  # pragma: no cover
+    mp = None
+    mp_python = None
+    mp_vision = None
+
 import numpy as np
 from PIL import Image, ImageDraw
 
@@ -1974,27 +1983,64 @@ class DualViewParagliderTracker:
         frame_bgr: np.ndarray,
     ) -> Dict[str, Any]:
         """
-        Detects the upper canopy bounding box and the central pilot helmet/torso anchor `P_torso(t)`
-        in normalized `480x270` coordinates, deriving shoulders, carabiners, and pulleys relative to `P_torso(t)`.
+        Detects the upper canopy bounding box via hue-constrained HSV connected-component segmentation
+        (rejecting blue sky and watermarks) and the central pilot helmet/torso anchor `P_torso(t)`
+        in normalized `480x270` coordinates.
         """
+        h, w = frame_bgr.shape[:2]
+        sx, sy = 480.0 / float(w), 270.0 / float(h)
         hsv = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2HSV)
         H, S, V = hsv[:, :, 0], hsv[:, :, 1], hsv[:, :, 2]
 
-        canopy_mask = (S > 110) & (V > 90)
-        canopy_mask[115:, :] = False
-        canopy_mask[95:, 180:290] = False
-        ys, xs = np.where(canopy_mask)
-        if len(xs) > 80:
-            x0, x1 = int(np.percentile(xs, 3)), int(np.percentile(xs, 97))
-            y0, y1 = int(np.percentile(ys, 5)), int(np.percentile(ys, 95))
-            cw = max(60, min(280, x1 - x0))
-            ch = max(22, min(85, y1 - y0))
-            cx = int(0.5 * (x0 + x1))
-            cy = int(0.5 * (y0 + y1))
-        else:
-            cx, cy, cw, ch = 244, 44, 166, 42
+        canopy_mask = (((H >= 11) & (H <= 38)) | (H <= 10) | (H >= 160)) & (S >= 88) & (V >= 95)
+        canopy_mask[int(0.46 * h) :, :] = False
+        canopy_mask[: int(0.11 * h), int(0.77 * w) :] = False
 
-        red_mask = ((H <= 14) | (H >= 165)) & (S > 115) & (V > 75)
+        k_open = max(1, round(w / 420.0))
+        k_close = max(3, round(w / 115.0))
+        mask_u8 = canopy_mask.astype(np.uint8) * 255
+        mask_u8 = cv2.morphologyEx(mask_u8, cv2.MORPH_OPEN, np.ones((k_open, k_open), np.uint8))
+        mask_u8 = cv2.morphologyEx(mask_u8, cv2.MORPH_CLOSE, np.ones((k_close, k_close), np.uint8))
+
+        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask_u8)
+        cx, cy, cw, ch = 244, 49, 156, 54
+        if num_labels > 1:
+            areas = stats[1:, cv2.CC_STAT_AREA]
+            best_lbl = 1 + int(np.argmax(areas))
+            bx, by, bw, bh, barea = stats[best_lbl]
+            min_area = max(45, int(0.0004 * w * h))
+            if barea >= min_area:
+                pad_x = max(8, int(0.028 * w))
+                pad_y = max(6, int(0.035 * h))
+                keep = labels == best_lbl
+                for lbl in range(1, num_labels):
+                    if lbl == best_lbl or stats[lbl, cv2.CC_STAT_AREA] < max(12, min_area // 5):
+                        continue
+                    lx_c, ly_c, lw_c, lh_c, _ = stats[lbl]
+                    if (
+                        lx_c <= bx + bw + pad_x
+                        and lx_c + lw_c >= bx - pad_x
+                        and ly_c <= by + bh + pad_y
+                        and ly_c + lh_c >= by - pad_y
+                    ):
+                        keep |= labels == lbl
+                ys, xs = np.where(keep)
+                if len(xs) > 0:
+                    x0, x1 = float(np.min(xs)), float(np.max(xs))
+                    y0, y1 = float(np.min(ys)), float(np.max(ys))
+                    y1_full = min(0.47 * h, y1 + 0.10 * (y1 - y0))
+                    cx = int(round(0.5 * (x0 + x1) * sx))
+                    cy = int(round(0.5 * (y0 + y1_full) * sy))
+                    cw = max(54, min(220, int(round((x1 - x0) * sx))))
+                    ch = max(22, min(80, int(round((y1_full - y0) * sy))))
+
+        hsv_480 = (
+            cv2.resize(hsv, (480, 270), interpolation=cv2.INTER_NEAREST)
+            if (w, h) != (480, 270)
+            else hsv
+        )
+        H4, S4, V4 = hsv_480[:, :, 0], hsv_480[:, :, 1], hsv_480[:, :, 2]
+        red_mask = ((H4 <= 14) | (H4 >= 165)) & (S4 > 115) & (V4 > 75)
         red_mask[:100, :] = False
         red_mask[140:, :] = False
         red_mask[:, :208] = False
@@ -2002,8 +2048,8 @@ class DualViewParagliderTracker:
         rys, rxs = np.where(red_mask)
         if len(rxs) >= 10:
             hx, hy = float(np.median(rxs)), float(np.median(rys))
-            px = max(226, min(236, int(round(hx))))
-            py = max(144, min(149, int(round(hy + 12))))
+            px = max(224, min(240, int(round(hx))))
+            py = max(144, min(152, int(round(hy + 12))))
             has_helmet = True
         else:
             px, py = 231, 146
@@ -2016,7 +2062,7 @@ class DualViewParagliderTracker:
             "pw": 56,
             "ph": 76,
             "has_helmet": has_helmet,
-            "hsv": hsv,
+            "hsv": hsv_480,
         }
 
     @classmethod
@@ -2354,101 +2400,15 @@ class DualViewParagliderTracker:
           - Pass 3: Decodes optimal left and right trajectories `u_L*(t), u_R*(t)` via independent Viterbi
             dynamic programming and derives brake percentages strictly from `||P_hand(u*_t) - P_pulley(t)||`.
         """
-        arm_calib = cls.calibrate_360_arm_kinematics(frames_bgr)
-        n_frames = len(frames_bgr)
-        n_states = 51
+        from .pose_s2_tracker import extract_pose_s2_sequence
 
-        energy_mat_l = np.zeros((n_frames, n_states), dtype=np.float64)
-        energy_mat_r = np.zeros((n_frames, n_states), dtype=np.float64)
-        frame_poses: List[Dict[str, Any]] = []
+        return extract_pose_s2_sequence(
+            frames_bgr,
+            detect_anchor_fn=cls._detect_360_canopy_and_torso_anchor,
+            ik_2link_fn=cls.solve_inverse_kinematics_2link,
+            fallback_energy_fn=cls.compute_arm_pose_energy,
+        )
 
-        for idx, raw_f in enumerate(frames_bgr):
-            h, w = raw_f.shape[:2]
-            f_bgr = (
-                cv2.resize(raw_f, (480, 270), interpolation=cv2.INTER_AREA)
-                if (w, h) != (480, 270)
-                else raw_f
-            )
-            px = arm_calib["smooth_px"][idx]
-            py = arm_calib["smooth_py"][idx]
-            c_box = arm_calib["canopy_boxes"][idx]
-            pose = cls.compute_arm_pose_energy(
-                f_bgr,
-                px=px,
-                py=py,
-                cx=c_box[0],
-                arm_calib=arm_calib,
-                static_dark_mask=arm_calib["static_dark_mask"],
-                n_states=n_states,
-            )
-            energy_mat_l[idx] = pose["energy_left"]
-            energy_mat_r[idx] = pose["energy_right"]
-            frame_poses.append(pose)
-
-        opt_k_l = cls.solve_viterbi_brake_trajectory(energy_mat_l, max_du_step=12, smooth_weight=0.45)
-        opt_k_r = cls.solve_viterbi_brake_trajectory(energy_mat_r, max_du_step=12, smooth_weight=0.45)
-
-        results: List[Dict[str, Any]] = []
-        for idx in range(n_frames):
-            pose = frame_poses[idx]
-            c_box = arm_calib["canopy_boxes"][idx]
-            px = arm_calib["smooth_px"][idx]
-            py = arm_calib["smooth_py"][idx]
-            pw, ph = 56, 76
-
-            kl = int(opt_k_l[idx])
-            kr = int(opt_k_r[idx])
-            lx, ly = pose["hands_left"][kl]
-            rx, ry = pose["hands_right"][kr]
-            el_l = pose["elbows_left"][kl]
-            el_r = pose["elbows_right"][kr]
-            pul_l = pose["pulley_left"]
-            pul_r = pose["pulley_right"]
-            carab_l = pose["carabiner_left"]
-            carab_r = pose["carabiner_right"]
-            sh_l = pose["shoulder_left"]
-            sh_r = pose["shoulder_right"]
-
-            cable_len_l = math.hypot(lx - pul_l[0], max(0.0, ly - pul_l[1]))
-            cable_len_r = math.hypot(rx - pul_r[0], max(0.0, ry - pul_r[1]))
-            brake_l_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_l - 8.0) / 86.0))))
-            brake_r_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_r - 8.0) / 78.0))))
-
-            cx, cy, cw, ch = c_box
-            results.append(
-                {
-                    "canopy_box": c_box,
-                    "left_hand": [lx, ly],
-                    "right_hand": [rx, ry],
-                    "pilot_box": [px, py, pw, ph],
-                    "pulley_left": [pul_l[0], pul_l[1]],
-                    "pulley_right": [pul_r[0], pul_r[1]],
-                    "carabiner_left": [carab_l[0], carab_l[1]],
-                    "carabiner_right": [carab_r[0], carab_r[1]],
-                    "brake_left_pct": brake_l_pct,
-                    "brake_right_pct": brake_r_pct,
-                    "elbow_left": [el_l[0], el_l[1]],
-                    "elbow_right": [el_r[0], el_r[1]],
-                    "shoulder_left": [sh_l[0], sh_l[1]],
-                    "shoulder_right": [sh_r[0], sh_r[1]],
-                    "head": [px, py - 22],
-                    "cam_knee": [158, 228],
-                    "u_left": round(kl / 50.0, 2),
-                    "u_right": round(kr / 50.0, 2),
-                    "tuple22": [
-                        cx, cy, cw, ch,
-                        lx, ly,
-                        rx, ry,
-                        px, py, pw, ph,
-                        pul_l[0], pul_l[1],
-                        pul_r[0], pul_r[1],
-                        brake_l_pct, brake_r_pct,
-                        el_l[0], el_l[1],
-                        el_r[0], el_r[1],
-                    ],
-                }
-            )
-        return results
 
     @classmethod
     def extract_real_360_frame_features(
@@ -2466,73 +2426,61 @@ class DualViewParagliderTracker:
         if cv2 is None:
             raise RuntimeError("OpenCV (cv2) is required for extract_real_360_frame_features.")
 
-        h, w = frame_bgr.shape[:2]
-        if (w, h) != (480, 270):
-            frame_bgr = cv2.resize(frame_bgr, (480, 270), interpolation=cv2.INTER_AREA)
-
-        anch = cls._detect_360_canopy_and_torso_anchor(frame_bgr)
-        cx, cy, cw, ch = anch["canopy_box"]
-        px, py, pw, ph = anch["px"], anch["py"], anch["pw"], anch["ph"]
-
-        pose = cls.compute_arm_pose_energy(
-            frame_bgr,
-            px=px,
-            py=py,
-            cx=cx,
-            arm_calib=arm_calib,
-            static_dark_mask=static_dark_mask,
-            n_states=51,
+        from .pose_s2_tracker import (
+            compute_brake_pct_from_pulley,
+            extract_pose_and_s2_single_frame,
         )
-        kl = int(np.argmax(pose["energy_left"]))
-        kr = int(np.argmax(pose["energy_right"]))
 
-        lx, ly = pose["hands_left"][kl]
-        rx, ry = pose["hands_right"][kr]
-        el_l = pose["elbows_left"][kl]
-        el_r = pose["elbows_right"][kr]
-        pul_l = pose["pulley_left"]
-        pul_r = pose["pulley_right"]
-        carab_l = pose["carabiner_left"]
-        carab_r = pose["carabiner_right"]
-        sh_l = pose["shoulder_left"]
-        sh_r = pose["shoulder_right"]
-
-        cable_len_l = math.hypot(lx - pul_l[0], max(0.0, ly - pul_l[1]))
-        cable_len_r = math.hypot(rx - pul_r[0], max(0.0, ry - pul_r[1]))
-        brake_l_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_l - 8.0) / 86.0))))
-        brake_r_pct = int(round(100.0 * max(0.0, min(1.0, (cable_len_r - 8.0) / 78.0))))
-
+        d = extract_pose_and_s2_single_frame(
+            frame_bgr,
+            detect_anchor_fn=cls._detect_360_canopy_and_torso_anchor,
+            ik_2link_fn=cls.solve_inverse_kinematics_2link,
+            fallback_energy_fn=cls.compute_arm_pose_energy,
+            force_full_ensemble=True,
+        )
+        cx, cy, cw, ch = d["cbox"]
+        px, py, pw, ph = d["px"], d["py"], d["pw"], d["ph"]
+        pul_l = [int(round(d["pul_l"][0])), int(round(d["pul_l"][1]))]
+        pul_r = [int(round(d["pul_r"][0])), int(round(d["pul_r"][1]))]
+        carab_l = [int(round(d["carab_l"][0])), int(round(d["carab_l"][1]))]
+        carab_r = [int(round(d["carab_r"][0])), int(round(d["carab_r"][1]))]
+        sh_l = [int(round(d["sh_l"][0])), int(round(d["sh_l"][1]))]
+        sh_r = [int(round(d["sh_r"][0])), int(round(d["sh_r"][1]))]
+        lh = d["l_hand"] if d["l_hand"] is not None else [float(pul_l[0]), float(pul_l[1] + 4)]
+        rh = d["r_hand"] if d["r_hand"] is not None else [float(pul_r[0]), float(pul_r[1] + 4)]
+        lx, ly = int(round(lh[0])), int(round(lh[1]))
+        rx, ry = int(round(rh[0])), int(round(rh[1]))
+        el_l = [int(round(d["el_l"][0])), int(round(d["el_l"][1]))]
+        el_r = [int(round(d["el_r"][0])), int(round(d["el_r"][1]))]
+        brake_l_pct = compute_brake_pct_from_pulley((lx, ly), pul_l)
+        brake_r_pct = compute_brake_pct_from_pulley((rx, ry), pul_r)
+        t22 = [
+            cx, cy, cw, ch, lx, ly, rx, ry, px, py, pw, ph,
+            pul_l[0], pul_l[1], pul_r[0], pul_r[1],
+            brake_l_pct, brake_r_pct, el_l[0], el_l[1], el_r[0], el_r[1],
+        ]
         return {
             "canopy_box": [cx, cy, cw, ch],
             "left_hand": [lx, ly],
             "right_hand": [rx, ry],
             "pilot_box": [px, py, pw, ph],
-            "pulley_left": [pul_l[0], pul_l[1]],
-            "pulley_right": [pul_r[0], pul_r[1]],
-            "carabiner_left": [carab_l[0], carab_l[1]],
-            "carabiner_right": [carab_r[0], carab_r[1]],
+            "pulley_left": pul_l,
+            "pulley_right": pul_r,
+            "carabiner_left": carab_l,
+            "carabiner_right": carab_r,
             "brake_left_pct": brake_l_pct,
             "brake_right_pct": brake_r_pct,
-            "elbow_left": [el_l[0], el_l[1]],
-            "elbow_right": [el_r[0], el_r[1]],
-            "shoulder_left": [sh_l[0], sh_l[1]],
-            "shoulder_right": [sh_r[0], sh_r[1]],
-            "head": [px, py - 22],
+            "elbow_left": el_l,
+            "elbow_right": el_r,
+            "shoulder_left": sh_l,
+            "shoulder_right": sh_r,
+            "head": [int(round(d["head"][0])), int(round(d["head"][1]))],
             "cam_knee": [158, 228],
-            "u_left": round(kl / 50.0, 2),
-            "u_right": round(kr / 50.0, 2),
-            "tuple22": [
-                cx, cy, cw, ch,
-                lx, ly,
-                rx, ry,
-                px, py, pw, ph,
-                pul_l[0], pul_l[1],
-                pul_r[0], pul_r[1],
-                brake_l_pct, brake_r_pct,
-                el_l[0], el_l[1],
-                el_r[0], el_r[1],
-            ],
+            "u_left": round(brake_l_pct / 100.0, 2),
+            "u_right": round(brake_r_pct / 100.0, 2),
+            "tuple22": t22,
         }
+
 
 
 ParagliderVisionTracker = DualViewParagliderTracker

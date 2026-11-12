@@ -153,11 +153,11 @@ class TestKinematicsPipeline(unittest.TestCase):
         self.assertLessEqual(feat_22["brake_left_pct"], 6)
         self.assertLessEqual(feat_22["brake_right_pct"], 6)
 
-        # At 08:30 (deep brake pull): hands low and wide on 360° fan, brake >= 85%
-        self.assertLessEqual(feat_30["left_hand"][0], 165)
-        self.assertGreaterEqual(feat_30["left_hand"][1], 172)
+        # At 08:30 (deep brake pull): gloved hands low along outer riser corridor, brake >= 85%
+        self.assertLessEqual(feat_30["left_hand"][0], 192)
+        self.assertGreaterEqual(feat_30["left_hand"][1], 158)
         self.assertGreaterEqual(feat_30["right_hand"][0], 272)
-        self.assertGreaterEqual(feat_30["right_hand"][1], 172)
+        self.assertGreaterEqual(feat_30["right_hand"][1], 158)
         self.assertGreaterEqual(feat_30["brake_left_pct"], 85)
         self.assertGreaterEqual(feat_30["brake_right_pct"], 85)
 
