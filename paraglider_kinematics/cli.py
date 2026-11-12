@@ -9,7 +9,8 @@ from typing import Dict
 from .physics_replay import ParagliderPhysicsComparator
 from .schema import ManeuverKinematicsTrace, WingGeometrySpec
 from .theo_de_blic_dataset import (
-    generate_video_and_extract_trace,
+    decode_real_video_frames_rgb,
+    extract_trace_from_real_video,
     render_cv_overlay_keyframe_png,
 )
 from .vision_tracker import DualViewParagliderTracker
@@ -19,56 +20,56 @@ SUITE_SPECS = [
     (
         "pitch_pendulum_uncaught",
         "1A. Pitch Pendulum — Single Pull & Uncaught Dive (How to Pitch)",
-        "03:09-06:15",
-        6.5,
+        "07:42-08:19",
+        37.25,
         "side_chase",
     ),
     (
         "pitch_pendulum_active_catch",
         "1B. Pitch Pendulum — Resonance Double-Pump & Active Catch (Catching the Dive)",
-        "08:19-09:41",
-        8.5,
+        "08:19-09:07",
+        47.75,
         "side_chase",
     ),
     (
         "pitch_mistake_late_brake_stall",
         "1C. Pitch Mistake — Re-Braking While Wing Pitches Aft (Risk of Stalling)",
-        "09:41-10:43",
-        7.0,
+        "10:26-11:13",
+        46.75,
         "side_chase",
     ),
     (
         "dynamic_turn_coordinated",
         "2A. Dynamic Turn — Weight-Shift Preload + Inside Brake Carving Dive (How to Dynamic Turn)",
-        "15:04-16:34",
-        5.5,
+        "04:50-05:37",
+        47.00,
         "rear_chase",
     ),
     (
         "dynamic_turn_mistake_no_ws",
         "2B. Dynamic Turn Mistake — Abrupt Brake Pull Without Weight-Shift (Common Mistake)",
-        "12:58-14:40",
-        5.5,
+        "06:05-06:48",
+        43.00,
         "rear_chase",
     ),
     (
         "rolls_weightshift_and_brake",
         "3A. Roll Exercises — Resonant Weight-Shift & Inside Brake Pumping (How to Induce Roll)",
-        "17:43-19:15",
-        8.0,
+        "00:48-01:28",
+        39.50,
         "rear_chase",
     ),
     (
         "rolls_big_ears_pure_ws",
         "3B. Roll Exercises — Big Ears + Pure Harness Weight-Shift Resonance (Roll with Big Ears)",
-        "19:15-20:40",
-        7.5,
+        "03:05-03:51",
+        45.75,
         "rear_chase",
     ),
 ]
 
 
-def run_theo_pitch_suite(repo_root: Path) -> Dict:
+def run_theo_pitch_suite(repo_root: Path, allow_cached_traces: bool = True) -> Dict:
     videos_dir = repo_root / "videos"
     traces_dir = repo_root / "data" / "traces"
     diag_dir = repo_root / "data" / "diagnostics"
@@ -86,38 +87,46 @@ def run_theo_pitch_suite(repo_root: Path) -> Dict:
         "maneuvers": {},
     }
 
-    print("=== ParagliderKinematicsLab: Frame-by-Frame CV & 500 Hz Physics Residual Suite (All 7 Maneuvers) ===")
-    for key, title, ts_range, dur, cam_mode in SUITE_SPECS:
+    print("=== ParagliderKinematicsLab: Real OpenCV & 500 Hz C# SSOT Residual Suite (All 7 Maneuvers) ===")
+    for key, title, ts_range, _dur, cam_mode in SUITE_SPECS:
         mp4_path = videos_dir / f"{key}.mp4"
-        trace = generate_video_and_extract_trace(
-            maneuver_key=key,
-            maneuver_name=title,
-            timestamp_range=ts_range,
-            duration_sec=dur,
-            output_mp4_path=mp4_path,
-            fps=30.0,
-            camera_mode=cam_mode,
-        )
         json_path = traces_dir / f"{key}.json"
-        trace.save_json(json_path)
+        if mp4_path.is_file():
+            trace = extract_trace_from_real_video(
+                video_path=mp4_path,
+                maneuver_key=key,
+                maneuver_name=title,
+                timestamp_range=ts_range,
+                fps=30.0,
+                camera_mode=cam_mode,
+            )
+            trace.save_json(json_path)
+        elif allow_cached_traces and json_path.is_file():
+            trace = ManeuverKinematicsTrace.load_json(json_path)
+        else:
+            raise FileNotFoundError(
+                f"Real video clip '{mp4_path}' not found and no pre-extracted OpenCV trace at '{json_path}'."
+            )
 
+        curr_sim = ParagliderPhysicsComparator.run_csharp_ssot_500hz(
+            trace, wing_profile={"wingId": "school_ena_m"}
+        )
+        fp_sim = ParagliderPhysicsComparator.run_csharp_ssot_500hz(
+            trace, wing_profile={"wingId": "mentor7_light_s"}
+        )
         if cam_mode == "rear_chase":
-            curr_sim = ParagliderPhysicsComparator.run_current_paraglidersim_lateral_engine(trace)
-            fp_sim = ParagliderPhysicsComparator.run_first_principles_lateral_engine(trace)
             res_curr = ParagliderPhysicsComparator.evaluate_lateral_residuals(
-                trace, curr_sim, "CurrentParagliderSim (1.60x RollStiff, InvertedEulerPitch, FixedBigEarsDamping)"
+                trace, curr_sim, "CSharp500Hz_SchoolEnaM"
             )
             res_fp = ParagliderPhysicsComparator.evaluate_lateral_residuals(
-                trace, fp_sim, "FirstPrinciplesLateral (1.0x GravityPendulum, LiftUnloadingDive, TipDampingReduction)"
+                trace, fp_sim, "CSharp500Hz_Mentor7LightS"
             )
         else:
-            curr_sim = ParagliderPhysicsComparator.run_current_paraglidersim_engine(trace)
-            fp_sim = ParagliderPhysicsComparator.run_first_principles_two_body_engine(trace)
             res_curr = ParagliderPhysicsComparator.evaluate_residuals(
-                trace, curr_sim, "CurrentParagliderSim (zeta=0.52, 0.08 AoA, WagnerImpulse)"
+                trace, curr_sim, "CSharp500Hz_SchoolEnaM"
             )
             res_fp = ParagliderPhysicsComparator.evaluate_residuals(
-                trace, fp_sim, "FirstPrinciplesTwoBody (True Drag Arm + Surge Coupling)"
+                trace, fp_sim, "CSharp500Hz_Mentor7LightS"
             )
 
         event_frames = {ev.event_type: ev.frame_index for ev in trace.events}
@@ -134,11 +143,12 @@ def run_theo_pitch_suite(repo_root: Path) -> Dict:
             "roll_swing_peak_3",
             "roll_swing_peak_4",
         ]
-        for ev_name in candidate_events:
-            if ev_name in event_frames:
-                png_out = keyframes_dir / f"{key}_{ev_name}.png"
-                render_cv_overlay_keyframe_png(mp4_path, trace, event_frames[ev_name], png_out)
-                rendered_pngs[ev_name] = str(png_out)
+        if mp4_path.is_file():
+            for ev_name in candidate_events:
+                if ev_name in event_frames:
+                    png_out = keyframes_dir / f"{key}_{ev_name}.png"
+                    render_cv_overlay_keyframe_png(mp4_path, trace, event_frames[ev_name], png_out)
+                    rendered_pngs[ev_name] = str(png_out)
 
         pm = trace.phase_metrics
         print(f"\n--- {title} [{ts_range}] ({cam_mode}) ---")
@@ -297,15 +307,16 @@ def main() -> None:
                 print(f"[ERROR] Trace not found: {t_path}")
                 continue
             trace = ManeuverKinematicsTrace.load_json(t_path)
+            mp4_in = videos_dir / f"{k}.mp4"
             mp4_out = videos_dir / f"{k}_annotated.mp4"
             print(f"Exporting annotated video for '{k}' ({len(trace.frames)} frames)...")
-            export_annotated_mp4(trace, mp4_out)
+            export_annotated_mp4(trace, mp4_out, video_path=mp4_in)
             print(f"[OK] Exported: {mp4_out} ({mp4_out.stat().st_size / 1024:.1f} KB)")
         return
 
     if args.video:
         tracker = DualViewParagliderTracker()
-        frames = tracker.extract_video_frames_ffmpeg(args.video, fps=30.0)
+        frames = decode_real_video_frames_rgb(args.video, fps=30.0)
         trace = tracker.analyze_frames(
             frames_rgb=frames,
             fps=30.0,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 import json
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -101,6 +101,21 @@ class FrameObservation:
     shot_mode: str = "DUAL_SPLIT"
     persp_scale_lr: float = 1.0
     anchor_joint: str = "none"
+    # Optional YouTube 480x270 real OpenCV anatomical & canopy bounding coordinates
+    yt_canopy_box: Optional[List[float]] = None
+    yt_left_hand: Optional[List[float]] = None
+    yt_right_hand: Optional[List[float]] = None
+    yt_pilot_box: Optional[List[float]] = None
+    yt_pulley_left: Optional[List[float]] = None
+    yt_pulley_right: Optional[List[float]] = None
+    yt_carabiner_left: Optional[List[float]] = None
+    yt_carabiner_right: Optional[List[float]] = None
+    yt_elbow_left: Optional[List[float]] = None
+    yt_elbow_right: Optional[List[float]] = None
+    yt_shoulder_left: Optional[List[float]] = None
+    yt_shoulder_right: Optional[List[float]] = None
+    yt_head: Optional[List[float]] = None
+    yt_cam_knee: Optional[List[float]] = None
 
 
 @dataclass
@@ -181,11 +196,18 @@ class ManeuverKinematicsTrace:
 
     @classmethod
     def from_dict(cls, d: Dict) -> ManeuverKinematicsTrace:
-        wing = WingGeometrySpec(**d.get("wing", {}))
-        pm = PhaseLagMetrics(**d.get("phase_metrics", {}))
-        events = [CommandTimingEvent(**e) for e in d.get("events", [])]
-        frames = [FrameObservation(**f) for f in d.get("frames", [])]
-        shot_profiles = [ShotCalibrationProfile(**sp) for sp in d.get("shot_profiles", [])]
+        def _filter_kwargs(dc_type, raw: Dict) -> Dict:
+            allowed = {fld.name for fld in fields(dc_type)}
+            return {k: v for k, v in raw.items() if k in allowed}
+
+        wing = WingGeometrySpec(**_filter_kwargs(WingGeometrySpec, d.get("wing", {})))
+        pm = PhaseLagMetrics(**_filter_kwargs(PhaseLagMetrics, d.get("phase_metrics", {})))
+        events = [CommandTimingEvent(**_filter_kwargs(CommandTimingEvent, e)) for e in d.get("events", [])]
+        frames = [FrameObservation(**_filter_kwargs(FrameObservation, f)) for f in d.get("frames", [])]
+        shot_profiles = [
+            ShotCalibrationProfile(**_filter_kwargs(ShotCalibrationProfile, sp))
+            for sp in d.get("shot_profiles", [])
+        ]
         return cls(
             schema_version=d.get("schema_version", "1.0.0"),
             source_video_url=d.get("source_video_url", ""),

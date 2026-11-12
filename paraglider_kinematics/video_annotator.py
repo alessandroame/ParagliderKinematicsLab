@@ -9,13 +9,8 @@ from typing import Dict, List, Optional
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from .physics_replay import ParagliderPhysicsComparator
-from .schema import ManeuverKinematicsTrace, WingGeometrySpec
-from .theo_de_blic_dataset import (
-    build_theo_full_command_law,
-    render_dual_view_frame_rgb,
-)
-from .vision_tracker import DualViewParagliderTracker
+from .schema import ManeuverKinematicsTrace
+from .theo_de_blic_dataset import decode_real_video_frames_rgb
 
 
 def draw_pilot_skeleton_overlay(draw: ImageDraw.ImageDraw, obs) -> None:
@@ -247,14 +242,28 @@ def render_annotated_frame(
 def export_annotated_mp4(
     trace: ManeuverKinematicsTrace,
     output_path: str | Path,
+    video_path: Optional[str | Path] = None,
     width: int = 960,
     height: int = 540,
     fps: float = 30.0,
 ) -> Path:
     """
-    Renders and encodes a full annotated MP4 video with burnt-in Computer Vision
-    detection geometry, telemetry HUD, and physical event alerts.
+    Renders and encodes a full annotated MP4 video by overlaying Computer Vision
+    detection geometry, telemetry HUD, and physical event alerts onto a real input MP4 video.
+    Raises `FileNotFoundError` when `video_path` is absent (synthetic frame generation is forbidden).
     """
+    if video_path is None:
+        raise FileNotFoundError(
+            f"Real input MP4 video required to export annotated video for '{trace.maneuver_id}'."
+        )
+    src_video = Path(video_path)
+    if not src_video.is_file():
+        raise FileNotFoundError(
+            f"Real input MP4 video not found at '{src_video}'. Synthetic fallback rendering is forbidden."
+        )
+
+    real_frames_rgb = decode_real_video_frames_rgb(src_video, fps=fps, width=width, height=height)
+
     out_file = Path(output_path)
     out_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -294,20 +303,8 @@ def export_annotated_mp4(
         else:
             active_event_banner = None
 
-        bl, br, ws, be = build_theo_full_command_law(trace.maneuver_id, obs.time_sec)
-        base_rgb = render_dual_view_frame_rgb(
-            width=width,
-            height=height,
-            t_sec=obs.time_sec,
-            brake_l=bl,
-            brake_r=br,
-            weight_shift=ws,
-            pitch_deg=obs.pitch_deg,
-            roll_deg=obs.roll_deg,
-            horizon_tilt_deg=obs.horizon_tilt_deg,
-            big_ears_norm=be,
-            camera_mode=trace.camera_mode,
-        )
+        src_idx = min(idx, len(real_frames_rgb) - 1)
+        base_rgb = real_frames_rgb[src_idx]
         annotated_rgb = render_annotated_frame(
             base_rgb=base_rgb,
             obs=obs,
@@ -330,6 +327,7 @@ def export_annotated_mp4(
 def main():
     parser = argparse.ArgumentParser(description="Export annotated flight video with CV & telemetry HUD")
     parser.add_argument("--trace", type=str, required=True, help="Path to maneuver trace JSON")
+    parser.add_argument("--video", type=str, required=True, help="Path to real input MP4 video")
     parser.add_argument("--out", type=str, default=None, help="Output MP4 path")
     args = parser.parse_args()
 
@@ -338,7 +336,7 @@ def main():
     out_path = Path(args.out) if args.out else trace_path.parent.parent / "videos" / f"{trace.maneuver_id}_annotated.mp4"
 
     print(f"Rendering annotated video for '{trace.maneuver_name}' ({len(trace.frames)} frames)...")
-    exported = export_annotated_mp4(trace, out_path)
+    exported = export_annotated_mp4(trace, out_path, video_path=args.video)
     print(f"[OK] Exported annotated video: {exported} ({exported.stat().st_size / 1024:.1f} KB)")
 
 

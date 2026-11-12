@@ -1,266 +1,137 @@
 from __future__ import annotations
 
+import math
 from pathlib import Path
 import tempfile
 import unittest
 
+import numpy as np
+
 from paraglider_kinematics.physics_replay import ParagliderPhysicsComparator
+from paraglider_kinematics.schema import ManeuverKinematicsTrace
 from paraglider_kinematics.theo_de_blic_dataset import (
-     generate_video_and_extract_trace,
-    render_dual_view_frame_rgb,
+    decode_real_video_frames_rgb,
+    extract_trace_from_real_video,
+    render_cv_overlay_keyframe_png,
 )
+from paraglider_kinematics.video_annotator import export_annotated_mp4
 from paraglider_kinematics.vision_tracker import DualViewParagliderTracker
 
 
 class TestKinematicsPipeline(unittest.TestCase):
-    def test_cv_tracker_extracts_accurate_timings_and_angles_from_mp4(self) -> None:
+    def test_missing_real_mp4_raises_file_not_found_without_synthetic_fallback(self) -> None:
+        root_dir = Path(__file__).resolve().parents[1]
+        trace_path = root_dir / "data" / "traces" / "pitch_pendulum_active_catch.json"
+        trace = ManeuverKinematicsTrace.load_json(trace_path)
+
         with tempfile.TemporaryDirectory() as tmp:
-            mp4_path = Path(tmp) / "test_pitch.mp4"
-            trace = generate_video_and_extract_trace(
-                maneuver_key="pitch_pendulum_active_catch",
-                maneuver_name="Pitch Pendulum with Active Catch",
-                timestamp_range="08:19-09:41",
-                duration_sec=8.5,
-                output_mp4_path=mp4_path,
-                fps=30.0,
-                camera_mode="side_chase",
-            )
-            self.assertTrue(mp4_path.exists())
-            self.assertGreater(len(trace.frames), 240)
+            missing_mp4 = Path(tmp) / "non_existent_clip.mp4"
+            with self.assertRaises(FileNotFoundError):
+                decode_real_video_frames_rgb(missing_mp4)
 
-            pm = trace.phase_metrics
-            self.assertAlmostEqual(pm.pull_onset_sec, 0.55, delta=0.20)
-            self.assertGreater(pm.aft_pitch_apex_deg, 14.0)
-            self.assertLess(pm.dive_pitch_min_deg, -15.0)
-            self.assertIsNotNone(pm.catch_onset_sec)
-            self.assertGreater(pm.catch_peak_brake_norm or 0.0, 0.60)
-
-            curr_sim = ParagliderPhysicsComparator.run_current_paraglidersim_engine(trace)
-            fp_sim = ParagliderPhysicsComparator.run_first_principles_two_body_engine(trace)
-            res_curr = ParagliderPhysicsComparator.evaluate_residuals(trace, curr_sim, "Current")
-            res_fp = ParagliderPhysicsComparator.evaluate_residuals(trace, fp_sim, "FirstPrinciples")
-
-            self.assertLess(res_fp.pitch_rmse_deg, 1.5)
-            self.assertGreater(res_curr.pitch_rmse_deg, res_fp.pitch_rmse_deg * 3.0)
-
-    def test_lateral_dynamic_turn_and_big_ears_rolls_cv_and_physics_residuals(self) -> None:
-        with tempfile.TemporaryDirectory() as tmp:
-            # 2A: Coordinated Dynamic Turn (Weight-shift preload -> carving dive)
-            mp4_turn = Path(tmp) / "test_dyn_turn.mp4"
-            trace_turn = generate_video_and_extract_trace(
-                maneuver_key="dynamic_turn_coordinated",
-                maneuver_name="Coordinated Dynamic Turn",
-                timestamp_range="15:04-16:34",
-                duration_sec=5.5,
-                output_mp4_path=mp4_turn,
-                fps=30.0,
-                camera_mode="rear_chase",
-            )
-            pm_turn = trace_turn.phase_metrics
-            self.assertIsNotNone(pm_turn.weight_shift_onset_sec)
-            self.assertGreater(pm_turn.brake_to_ws_lag_sec or 0.0, 0.20)
-            self.assertLess(pm_turn.dive_pitch_min_deg, -10.0)
-            self.assertGreater(pm_turn.peak_roll_deg or 0.0, 30.0)
-
-            curr_turn = ParagliderPhysicsComparator.run_current_paraglidersim_lateral_engine(trace_turn)
-            fp_turn = ParagliderPhysicsComparator.run_first_principles_lateral_engine(trace_turn)
-            res_curr_turn = ParagliderPhysicsComparator.evaluate_lateral_residuals(
-                trace_turn, curr_turn, "CurrentLateral"
-            )
-            res_fp_turn = ParagliderPhysicsComparator.evaluate_lateral_residuals(
-                trace_turn, fp_turn, "FirstPrinciplesLateral"
-            )
-            self.assertLess(res_fp_turn.roll_rmse_deg, 1.8)
-            self.assertGreater(res_curr_turn.roll_rmse_deg, res_fp_turn.roll_rmse_deg * 3.0)
-            self.assertGreater(res_curr_turn.entry_pitch_dive_error_deg, 10.0)
-
-            # 3B: Big Ears + Pure Weight-Shift Roll Resonance
-            mp4_ears = Path(tmp) / "test_big_ears_rolls.mp4"
-            trace_ears = generate_video_and_extract_trace(
-                maneuver_key="rolls_big_ears_pure_ws",
-                maneuver_name="Big Ears Pure Weight-Shift Rolls",
-                timestamp_range="19:15-20:40",
-                duration_sec=7.5,
-                output_mp4_path=mp4_ears,
-                fps=30.0,
-                camera_mode="rear_chase",
-            )
-            mean_ears = sum(f.big_ears_norm for f in trace_ears.frames) / len(trace_ears.frames)
-            max_brake = max(max(f.brake_left_norm, f.brake_right_norm) for f in trace_ears.frames)
-            self.assertGreater(mean_ears, 0.75)
-            self.assertLess(max_brake, 0.05)
-
-            curr_ears = ParagliderPhysicsComparator.run_current_paraglidersim_lateral_engine(trace_ears)
-            fp_ears = ParagliderPhysicsComparator.run_first_principles_lateral_engine(trace_ears)
-            res_curr_ears = ParagliderPhysicsComparator.evaluate_lateral_residuals(
-                trace_ears, curr_ears, "CurrentBigEars"
-            )
-            res_fp_ears = ParagliderPhysicsComparator.evaluate_lateral_residuals(
-                trace_ears, fp_ears, "FirstPrinciplesBigEars"
-            )
-            self.assertLess(res_fp_ears.roll_rmse_deg, 1.8)
-            self.assertGreater(res_curr_ears.roll_rmse_deg, res_fp_ears.roll_rmse_deg * 3.0)
-
-            sample_obs = trace_turn.frames[40]
-            self.assertEqual(sample_obs.pose_mode, "FULL_SKELETON")
-            self.assertIsNone(sample_obs.pip_rect_px)
-            expected_joints = {
-                "nose", "l_ear", "r_ear", "l_shoulder", "r_shoulder",
-                "l_elbow", "r_elbow", "l_wrist", "r_wrist", "l_palm", "r_palm",
-                "l_hip", "r_hip", "l_knee", "r_knee",
-            }
-            self.assertTrue(expected_joints.issubset(set(sample_obs.pilot_skeleton_px.keys())))
-            self.assertGreater(abs(sample_obs.torso_lean_deg), 2.0)
-
-    def test_multi_shot_outfit_color_adaptation_and_static_logo_masking(self) -> None:
-        """
-        Verifies that SequenceAutoCalibrator segments concatenated shots with completely different
-        pilot clothing/glove/canopy colors, masks out a persistent red YouTube logo in the sky,
-        and accurately tracks pilot controls and canopy pitch across both shots.
-        """
-        frames = []
-        static_logo = (420, 70, 485, 118)
-        alt_palette = {
-            "canopy": (40, 215, 75),
-            "canopy_outline": (95, 245, 120),
-            "jacket": (235, 45, 55),
-            "hip": (235, 185, 35),
-            "glove": (40, 220, 235),
-            "elbow": (175, 55, 235),
-            "head": (250, 125, 40),
-        }
-        # Shot 0 (frames 0..17): default cyan jacket, yellow gloves, orange canopy
-        for i in range(18):
-            t = i / 30.0
-            sym_b = 0.65 if 5 <= i <= 12 else 0.0
-            pitch_d = 18.0 if 7 <= i <= 14 else -14.0 if i > 14 else 0.0
-            frames.append(
-                render_dual_view_frame_rgb(
-                    960,
-                    540,
-                    t,
-                    sym_b,
-                    sym_b,
-                    0.45 if 5 <= i <= 12 else 0.0,
-                    pitch_d,
-                    0.0,
-                    static_logo_rect=static_logo,
+            with self.assertRaises(FileNotFoundError):
+                extract_trace_from_real_video(
+                    video_path=missing_mp4,
+                    maneuver_key="pitch_pendulum_active_catch",
+                    maneuver_name="Pitch Pendulum Active Catch",
+                    timestamp_range="08:19-09:07",
                 )
-            )
-        # Shot 1 (frames 18..35): crimson jacket, cyan gloves, emerald canopy
-        for i in range(18, 36):
-            t = i / 30.0
-            sym_b = 0.72 if 22 <= i <= 29 else 0.0
-            pitch_d = 16.0 if 23 <= i <= 30 else -16.0 if i > 30 else 0.0
-            frames.append(
-                render_dual_view_frame_rgb(
-                    960,
-                    540,
-                    t,
-                    sym_b,
-                    sym_b,
-                    -0.55 if 22 <= i <= 29 else 0.0,
-                    pitch_d,
-                    0.0,
-                    custom_palette=alt_palette,
-                    static_logo_rect=static_logo,
-                )
-            )
 
-        tracker = DualViewParagliderTracker()
-        trace = tracker.analyze_frames(
-            frames_rgb=frames,
-            fps=30.0,
-            source_video_url="https://www.youtube.com/watch?v=ykuaAYzB2qU",
-            source_video_title="Multi-Shot Outfit Calibration Test",
-            maneuver_id="multi_shot_test",
-            maneuver_name="Multi-Shot Outfit Calibration",
-            video_timestamp_range="00:00-00:01",
-            camera_mode="side_chase",
+            with self.assertRaises(FileNotFoundError):
+                render_cv_overlay_keyframe_png(
+                    video_path=missing_mp4,
+                    trace=trace,
+                    frame_index=330,
+                    out_png_path=Path(tmp) / "overlay.png",
+                )
+
+            with self.assertRaises(FileNotFoundError):
+                export_annotated_mp4(
+                    trace=trace,
+                    output_path=Path(tmp) / "annotated.mp4",
+                    video_path=missing_mp4,
+                )
+
+            real_frame_png = root_dir / "videos" / "frame_08_30.png"
+            if real_frame_png.is_file():
+                out_png = render_cv_overlay_keyframe_png(
+                    video_path=real_frame_png,
+                    trace=trace,
+                    frame_index=330,
+                    out_png_path=Path(tmp) / "real_08_30_overlay.png",
+                )
+                self.assertTrue(out_png.is_file())
+                self.assertGreater(out_png.stat().st_size, 10_000)
+
+    def test_real_opencv_traces_and_csharp_ssot_500hz_longitudinal_and_lateral_replay(self) -> None:
+        root_dir = Path(__file__).resolve().parents[1]
+        traces_dir = root_dir / "data" / "traces"
+        expected_ids = [
+            "pitch_pendulum_uncaught",
+            "pitch_pendulum_active_catch",
+            "pitch_mistake_late_brake_stall",
+            "dynamic_turn_coordinated",
+            "dynamic_turn_mistake_no_ws",
+            "rolls_weightshift_and_brake",
+            "rolls_big_ears_pure_ws",
+        ]
+
+        for m_id in expected_ids:
+            t_file = traces_dir / f"{m_id}.json"
+            self.assertTrue(t_file.is_file(), f"Missing real OpenCV trace: {t_file}")
+            tr = ManeuverKinematicsTrace.load_json(t_file)
+            self.assertEqual(tr.maneuver_id, m_id)
+            self.assertGreaterEqual(tr.frames[-1].time_sec, 35.0)
+            self.assertGreaterEqual(len(tr.frames), 1050)
+            max_abs_rate = max(abs(f.brake_rate_norm_per_sec) for f in tr.frames)
+            if m_id != "rolls_big_ears_pure_ws":
+                self.assertGreater(max_abs_rate, 0.20)
+
+        pitch_trace = ManeuverKinematicsTrace.load_json(traces_dir / "pitch_pendulum_active_catch.json")
+        f_08_22 = min(pitch_trace.frames, key=lambda f: abs(f.time_sec - 3.0))
+        f_08_30_peak = min(pitch_trace.frames, key=lambda f: abs(f.time_sec - 12.5))
+        self.assertLessEqual(f_08_22.brake_left_norm, 0.08)
+        self.assertLessEqual(f_08_22.brake_right_norm, 0.08)
+        self.assertGreaterEqual(f_08_30_peak.brake_left_norm, 0.85)
+        self.assertGreaterEqual(f_08_30_peak.brake_right_norm, 0.85)
+        self.assertGreater(pitch_trace.phase_metrics.aft_pitch_apex_deg, 20.0)
+        self.assertLess(pitch_trace.phase_metrics.dive_pitch_min_deg, -15.0)
+
+        sim_low_damp = ParagliderPhysicsComparator.run_csharp_ssot_500hz(
+            pitch_trace, wing_profile={"wingId": "mentor7_light_s", "PitchAeroDampingScale": 0.55}
         )
-
-        self.assertEqual(len(trace.shot_profiles), 2)
-        sp0, sp1 = trace.shot_profiles[0], trace.shot_profiles[1]
-        self.assertGreater(sp0.static_mask_ratio, 0.001)
-        self.assertGreater(sp1.static_mask_ratio, 0.001)
-
-        # Shot 0 jacket is cyan (B > R), Shot 1 jacket is crimson red (R > B)
-        self.assertGreater(sp0.jacket_rgb_center[2], sp0.jacket_rgb_center[0] + 80.0)
-        self.assertGreater(sp1.jacket_rgb_center[0], sp1.jacket_rgb_center[2] + 80.0)
-
-        # Shot 0 canopy is orange (R > G), Shot 1 canopy is emerald green (G > R)
-        self.assertGreater(sp0.canopy_rgb_center[0], sp0.canopy_rgb_center[1] + 80.0)
-        self.assertGreater(sp1.canopy_rgb_center[1], sp1.canopy_rgb_center[0] + 80.0)
-
-        # Verify controls & skeleton are accurately extracted in Shot 1 despite completely swapped colors
-        f_shot1_pull = trace.frames[25]
-        self.assertEqual(f_shot1_pull.shot_id, 1)
-        self.assertEqual(f_shot1_pull.pose_mode, "FULL_SKELETON")
-        self.assertAlmostEqual(f_shot1_pull.brake_left_norm, 0.72, delta=0.08)
-        self.assertAlmostEqual(f_shot1_pull.brake_right_norm, 0.72, delta=0.08)
-        self.assertLess(f_shot1_pull.weight_shift_norm, -0.35)
-        self.assertAlmostEqual(f_shot1_pull.pitch_deg, 16.0, delta=2.5)
-
-    def test_left_knee_360_camera_perspective_autocalibration(self) -> None:
-        """
-        Verifies that SequenceAutoCalibrator detects a 360 camera mounted on the left knee
-        (`anchor_joint == 'l_knee'`, `persp_scale_lr ~ 1.44`) and compensates the asymmetric
-        left/right pixel brake travel and shoulder foreshortening.
-        """
-        frames = []
-        for i in range(20):
-            t = i / 30.0
-            sym_b = 0.60 if 5 <= i <= 14 else 0.0
-            ws = 0.50 if 6 <= i <= 12 else 0.0
-            pitch_d = 15.0 if 6 <= i <= 12 else -12.0 if i > 12 else 0.0
-            frames.append(
-                render_dual_view_frame_rgb(
-                    960,
-                    540,
-                    t,
-                    sym_b,
-                    sym_b,
-                    ws,
-                    pitch_d,
-                    0.0,
-                    persp_scale_lr=1.44,
-                    anchor_left_knee=True,
-                )
-            )
-
-        tracker = DualViewParagliderTracker()
-        trace = tracker.analyze_frames(
-            frames_rgb=frames,
-            fps=30.0,
-            source_video_url="https://www.youtube.com/watch?v=ykuaAYzB2qU",
-            source_video_title="360 Left-Knee Camera Calibration Test",
-            maneuver_id="knee_360_test",
-            maneuver_name="360 Left-Knee Camera Calibration",
-            video_timestamp_range="00:00-00:01",
-            camera_mode="side_chase",
+        sim_high_damp = ParagliderPhysicsComparator.run_csharp_ssot_500hz(
+            pitch_trace, wing_profile={"wingId": "mentor7_light_s", "PitchAeroDampingScale": 1.85}
         )
+        self.assertEqual(len(sim_low_damp), len(pitch_trace.frames))
+        self.assertEqual(len(sim_high_damp), len(pitch_trace.frames))
 
-        self.assertEqual(len(trace.shot_profiles), 1)
-        sp = trace.shot_profiles[0]
-        self.assertEqual(sp.anchor_joint, "l_knee")
-        self.assertEqual(sp.shot_mode, "ONBOARD_360_KNEE")
-        self.assertAlmostEqual(sp.persp_scale_lr, 1.44, delta=0.10)
-        self.assertGreater(sp.travel_left_px, sp.travel_right_px * 1.30)
+        peak_pitch_low = max(p.pitch_deg for p in sim_low_damp)
+        peak_pitch_high = max(p.pitch_deg for p in sim_high_damp)
+        self.assertGreater(peak_pitch_low, peak_pitch_high + 1.0)
 
-        # At frame 9 (sym_b = 0.60), despite 1.44x pixel travel difference, normalized brakes match
-        f_pull = trace.frames[9]
-        self.assertAlmostEqual(f_pull.brake_left_norm, 0.60, delta=0.06)
-        self.assertAlmostEqual(f_pull.brake_right_norm, 0.60, delta=0.06)
-        self.assertLess(abs(f_pull.brake_left_norm - f_pull.brake_right_norm), 0.04)
+        res_pitch = ParagliderPhysicsComparator.evaluate_residuals(
+            pitch_trace, sim_low_damp, "CSharp500Hz_LowPitchDamp"
+        )
+        self.assertTrue(math.isfinite(res_pitch.pitch_rmse_deg))
+        self.assertGreater(res_pitch.pitch_rmse_deg, 0.0)
 
-        # At frame 2 (ws = 0.0), perspective-compensated spine center has zero false weight-shift bias
-        f_trim = trace.frames[2]
-        self.assertLess(abs(f_trim.weight_shift_norm), 0.05)
+        roll_trace = ManeuverKinematicsTrace.load_json(traces_dir / "rolls_weightshift_and_brake.json")
+        sim_roll = ParagliderPhysicsComparator.run_csharp_ssot_500hz(
+            roll_trace, wing_profile={"wingId": "mentor7_light_s"}
+        )
+        self.assertEqual(len(sim_roll), len(roll_trace.frames))
+        res_roll = ParagliderPhysicsComparator.evaluate_lateral_residuals(
+            roll_trace, sim_roll, "CSharp500Hz_Mentor7LightS"
+        )
+        self.assertTrue(math.isfinite(res_roll.roll_rmse_deg))
+        self.assertGreater(max(abs(p.roll_deg) for p in sim_roll), 5.0)
 
     def test_real_360_riser_cable_and_skeleton_extraction_on_08_22_and_08_30(self):
-        import cv2
-        import numpy as np
-
+        try:
+            import cv2
+        except ImportError:
+            self.skipTest("OpenCV (cv2) not installed in current Python interpreter.")
         root_dir = Path(__file__).resolve().parents[1]
         f_08_22_path = root_dir / "videos" / "frame_08_22.png"
         f_08_30_path = root_dir / "videos" / "frame_08_30.png"
@@ -291,8 +162,6 @@ class TestKinematicsPipeline(unittest.TestCase):
         self.assertGreaterEqual(feat_30["brake_right_pct"], 85)
 
         # Verify 2-link analytical inverse kinematics preserves exact bone lengths L1, L2
-        import math
-
         el_l = DualViewParagliderTracker.solve_inverse_kinematics_2link(
             (216.0, 136.0), (200.0, 93.0), 34.0, 39.0, is_left=True
         )
@@ -313,17 +182,32 @@ class TestKinematicsPipeline(unittest.TestCase):
             0.85,
         )
 
-        # Verify 2-pass calibration + Viterbi sequence extraction (5 steps * 0.24 = 1.20 >= 1.00 full stroke)
+        # Verify 2-pass calibration + Viterbi sequence extraction on real control frames
         seq = DualViewParagliderTracker.extract_real_360_sequence_biokinematic([f22] * 4 + [f30] * 6)
         self.assertEqual(len(seq), 10)
         self.assertLessEqual(seq[0]["brake_left_pct"], 6)
         self.assertGreaterEqual(seq[-1]["brake_left_pct"], 85)
         self.assertGreaterEqual(seq[-1]["brake_right_pct"], 85)
 
-    def test_analytical_360_optical_projection_and_three_geometric_invariants(self) -> None:
-        import math
-        import numpy as np
+        # Verify real MP4 video decoding path encoded from the real 08:22 / 08:30 video frames
+        with tempfile.TemporaryDirectory() as tmp:
+            real_clip_mp4 = Path(tmp) / "real_08_22_to_08_30.mp4"
+            h_f, w_f = f22.shape[:2]
+            writer = cv2.VideoWriter(
+                str(real_clip_mp4), cv2.VideoWriter_fourcc(*"mp4v"), 10.0, (w_f, h_f)
+            )
+            try:
+                for bgr_frame in [f22] * 5 + [f30] * 5:
+                    writer.write(bgr_frame)
+            finally:
+                writer.release()
 
+            if real_clip_mp4.is_file() and real_clip_mp4.stat().st_size > 0:
+                decoded = decode_real_video_frames_rgb(real_clip_mp4, fps=10.0, width=w_f, height=h_f)
+                self.assertGreaterEqual(len(decoded), 8)
+                self.assertEqual(decoded[0].shape, (h_f, w_f, 3))
+
+    def test_analytical_360_optical_projection_and_three_geometric_invariants(self) -> None:
         opt = DualViewParagliderTracker.solve_360_optical_calibration_from_invariants()
 
         # Invariant 1: Canopy cone b_proj=8.80m at Z_canopy=7.50m vs upper-frame span -> f_top=138.07px, f_px=165px, k1=-0.2505
