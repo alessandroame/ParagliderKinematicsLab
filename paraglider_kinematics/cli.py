@@ -270,6 +270,30 @@ def main() -> None:
         help="Path to an input .mp4 video file to analyze frame-by-frame.",
     )
     parser.add_argument(
+        "--start-sec",
+        type=float,
+        default=None,
+        help="Optional start timestamp in seconds when extracting a sub-clip from --video.",
+    )
+    parser.add_argument(
+        "--end-sec",
+        type=float,
+        default=None,
+        help="Optional end timestamp in seconds when extracting a sub-clip from --video.",
+    )
+    parser.add_argument(
+        "--camera-mode",
+        type=str,
+        default="side_chase",
+        help="Camera mode for --video extraction ('side_chase' or 'rear_chase').",
+    )
+    parser.add_argument(
+        "--maneuver-id",
+        type=str,
+        default=None,
+        help="Optional maneuver_id override when --video is provided.",
+    )
+    parser.add_argument(
         "--out",
         type=str,
         default="data/traces/custom_trace.json",
@@ -316,21 +340,48 @@ def main() -> None:
 
     if args.video:
         tracker = DualViewParagliderTracker()
-        frames = decode_real_video_frames_rgb(args.video, fps=30.0)
+        start_s = float(args.start_sec) if args.start_sec is not None else None
+        dur_s = (
+            max(1.0, float(args.end_sec) - float(start_s or 0.0))
+            if args.end_sec is not None
+            else None
+        )
+        if start_s is not None or dur_s is not None:
+            frames = DualViewParagliderTracker.extract_video_frames_ffmpeg(
+                args.video,
+                fps=30.0,
+                start_sec=start_s,
+                duration_sec=dur_s,
+                width=960,
+                height=540,
+            )
+            s0 = int(round(start_s or 0.0))
+            s1 = int(round((start_s or 0.0) + (dur_s or (len(frames) / 30.0))))
+            ts_range = f"{s0 // 60:02d}:{s0 % 60:02d}-{s1 // 60:02d}:{s1 % 60:02d}"
+        else:
+            frames = decode_real_video_frames_rgb(args.video, fps=30.0)
+            ts_range = "full"
+
+        man_id = args.maneuver_id or Path(args.video).stem
+        cam_mode = args.camera_mode if args.camera_mode in ("side_chase", "rear_chase") else "side_chase"
         trace = tracker.analyze_frames(
             frames_rgb=frames,
             fps=30.0,
-            source_video_url=args.video,
+            source_video_url="https://www.youtube.com/watch?v=ykuaAYzB2qU"
+            if "ykuaAYzB2qU" in Path(args.video).name
+            else args.video,
             source_video_title=Path(args.video).name,
-            maneuver_id=Path(args.video).stem,
-            maneuver_name=f"Custom Video Analysis ({Path(args.video).name})",
-            video_timestamp_range="full",
+            maneuver_id=man_id,
+            maneuver_name=f"Custom Video Analysis ({man_id} {ts_range})",
+            video_timestamp_range=ts_range,
+            camera_mode=cam_mode,
         )
         out_path = trace.save_json(args.out)
         print(f"[OK] Extracted {len(trace.frames)} frames -> {out_path}")
-        from .inspector import build_and_export_inspector
-        html_path = build_and_export_inspector(repo_root, custom_trace=trace, custom_video_path=args.video)
-        print(f"[OK] Generated Interactive Flight Inspector for custom video: {html_path}")
+        if args.start_sec is None and args.end_sec is None:
+            from .inspector import build_and_export_inspector
+            html_path = build_and_export_inspector(repo_root, custom_trace=trace, custom_video_path=args.video)
+            print(f"[OK] Generated Interactive Flight Inspector for custom video: {html_path}")
         return
 
     run_theo_pitch_suite(repo_root)

@@ -160,6 +160,130 @@ def detect_horizon_s2_480(
     return n, hor_y_at(185.0), hor_y_at(282.0)
 
 
+def estimate_horizon_azimuth_shift_deg_480(
+    prev_bgr_480: Optional[np.ndarray],
+    curr_bgr_480: np.ndarray,
+    n_sky: np.ndarray,
+    canopy_box: List[float] | List[int],
+    head_pt: List[float] | Tuple[float, float],
+    f_eq: float = 90.0,
+) -> float:
+    """
+    Estimates frame-to-frame camera/pilot yaw rotation (deg) along the fitted Earth horizon
+    great circle on S^2 via 1D azimuthal gradient cross-correlation, masking canopy, risers,
+    pilot silhouette, and PiP overlay. Positive yaw = clockwise turn to the right.
+    """
+    if prev_bgr_480 is None or cv2 is None:
+        return 0.0
+
+    g_prev = cv2.cvtColor(prev_bgr_480, cv2.COLOR_BGR2GRAY).astype(np.float32)
+    g_curr = cv2.cvtColor(curr_bgr_480, cv2.COLOR_BGR2GRAY).astype(np.float32)
+
+    cx, cy, cw, ch = [float(v) for v in canopy_box]
+    hx = float(head_pt[0])
+
+    az_grid_deg = np.linspace(-65.0, 65.0, 131, dtype=np.float64)
+    sig_prev = np.zeros_like(az_grid_deg)
+    sig_curr = np.zeros_like(az_grid_deg)
+    valid = np.zeros(len(az_grid_deg), dtype=bool)
+
+    nx, ny, nz = float(n_sky[0]), float(n_sky[1]), float(n_sky[2])
+    if abs(ny) < 0.25:
+        return 0.0
+
+    for idx, az_deg in enumerate(az_grid_deg):
+        az_rad = math.radians(float(az_deg))
+        u_px = 240.0 + f_eq * az_rad
+        if u_px < 14.0 or u_px > 466.0:
+            continue
+        if 176.0 <= u_px <= 302.0 or abs(u_px - hx) < 38.0:
+            continue
+        el_rad = math.atan2(-(nx * math.sin(az_rad) + nz * math.cos(az_rad)), ny)
+        v_px = 135.0 + f_eq * el_rad
+        if v_px < 24.0 or v_px > 235.0:
+            continue
+        if (cx - 0.54 * cw) <= u_px <= (cx + 0.54 * cw) and v_px <= (cy + 0.58 * ch):
+            continue
+        if u_px >= 320.0 and v_px >= 156.0:
+            continue
+
+        ui = int(round(u_px))
+        vi = int(round(v_px))
+        y0 = max(2, vi - 6)
+        y1 = min(268, vi + 7)
+        sig_prev[idx] = float(np.mean(g_prev[y0:y1, max(0, ui - 1) : min(480, ui + 2)]))
+        sig_curr[idx] = float(np.mean(g_curr[y0:y1, max(0, ui - 1) : min(480, ui + 2)]))
+        valid[idx] = True
+
+    if int(np.sum(valid)) < 24:
+        return 0.0
+
+    d_prev = np.gradient(sig_prev) * valid
+    d_curr = np.gradient(sig_curr) * valid
+    norm_p = float(np.linalg.norm(d_prev))
+    norm_c = float(np.linalg.norm(d_curr))
+    if norm_p < 1e-3 or norm_c < 1e-3:
+        return 0.0
+
+    max_lag = 12
+    best_lag = 0
+    best_score = -1.0
+    scores: Dict[int, float] = {}
+    for lag in range(-max_lag, max_lag + 1):
+        if lag < 0:
+            a = d_prev[-lag:]
+            b = d_curr[:lag]
+            m = valid[-lag:] & valid[:lag]
+        elif lag > 0:
+            a = d_prev[:-lag]
+            b = d_curr[lag:]
+            m = valid[:-lag] & valid[lag:]
+        else:
+            a = d_prev
+            b = d_curr
+            m = valid
+        if int(np.sum(m)) < 18:
+            continue
+        denom = math.sqrt(float(np.sum(a[m] ** 2) * np.sum(b[m] ** 2)))
+        if denom < 1e-5:
+            continue
+        sc = float(np.sum(a[m] * b[m])) / denom
+        scores[lag] = sc
+        if sc > best_score:
+            best_score = sc
+            best_lag = lag
+
+    if best_score < 0.35:
+        return 0.0
+
+    s_m1 = scores.get(best_lag - 1, best_score)
+    s_p1 = scores.get(best_lag + 1, best_score)
+    denom_q = 2.0 * (2.0 * best_score - s_m1 - s_p1)
+    sub = 0.0
+    if abs(denom_q) > 1e-6:
+        sub = max(-0.5, min(0.5, (s_p1 - s_m1) / denom_q))
+    return float(-(best_lag + sub))
+
+
+def estimate_canopy_relative_yaw_deg_480(
+    canopy_box: List[float] | List[int],
+    pul_l: List[float] | Tuple[float, float],
+    pul_r: List[float] | Tuple[float, float],
+    nominal_span_px: float = 168.0,
+) -> float:
+    """
+    Estimates relative canopy-to-harness yaw twist (deg) from spanwise foreshortening
+    and lateral offset of the canopy leading-edge box relative to the riser midpoint.
+    """
+    cx, _, cw, _ = [float(v) for v in canopy_box]
+    riser_mid_x = 0.5 * (float(pul_l[0]) + float(pul_r[0]))
+    riser_span = max(24.0, float(pul_r[0]) - float(pul_l[0]))
+    asym_norm = max(-1.0, min(1.0, (cx - riser_mid_x) / (0.85 * riser_span)))
+    foreshort = max(0.35, min(1.0, cw / max(40.0, nominal_span_px)))
+    twist_mag_deg = math.degrees(math.acos(min(1.0, foreshort))) * 0.45
+    return round(float(math.copysign(twist_mag_deg, asym_norm) + 8.5 * asym_norm), 2)
+
+
 def detect_below_horizon_glove_480(
     bgr_480: np.ndarray,
     side: str,
@@ -406,6 +530,8 @@ def extract_pose_and_s2_single_frame(
         "r_hand": r_hand,
         "l_vis": l_vis,
         "r_vis": r_vis,
+        "n_sky": n_sky,
+        "bgr_480": bgr_480,
         "pitch_raw": pitch_raw,
         "roll_raw": roll_raw,
     }
@@ -514,6 +640,22 @@ def extract_pose_s2_sequence(
 
     trim_pitch = float(np.median(pitch_sm))
     trim_roll = float(np.median(roll_sm))
+    nominal_cw = max(80.0, float(np.median(cw_sm)))
+
+    yaw_shifts_deg: List[float] = [0.0] * n_frames
+    for i in range(1, n_frames):
+        yaw_shifts_deg[i] = estimate_horizon_azimuth_shift_deg_480(
+            raw_seq[i - 1]["bgr_480"],
+            raw_seq[i]["bgr_480"],
+            raw_seq[i]["n_sky"],
+            raw_seq[i]["cbox"],
+            raw_seq[i]["head"],
+            f_eq=90.0,
+        )
+    yaw_shifts_sm = med3(yaw_shifts_deg)
+    heading_seq_deg: List[float] = [0.0] * n_frames
+    for i in range(1, n_frames):
+        heading_seq_deg[i] = heading_seq_deg[i - 1] + yaw_shifts_sm[i]
 
     results: List[Dict[str, Any]] = []
     for idx in range(n_frames):
@@ -552,8 +694,14 @@ def extract_pose_s2_sequence(
         brake_r_pct = brk_r_all[idx]
         pitch_deg = round(pitch_sm[idx] - trim_pitch, 2)
         roll_deg = round(roll_sm[idx] - trim_roll, 2)
+        heading_deg = round(heading_seq_deg[idx], 2)
+        yaw_rate_deg_sec = round(yaw_shifts_sm[idx] * 30.0, 2)
+        canopy_yaw_rel_deg = estimate_canopy_relative_yaw_deg_480(
+            [cx, cy, cw, ch], pul_l, pul_r, nominal_span_px=nominal_cw
+        )
         pitch_decideg = int(round(pitch_deg * 10.0))
         roll_decideg = int(round(roll_deg * 10.0))
+        heading_decideg = int(round(heading_deg * 10.0))
 
         t22 = [
             cx, cy, cw, ch,
@@ -588,8 +736,12 @@ def extract_pose_s2_sequence(
                 "u_right": round(brake_r_pct / 100.0, 2),
                 "pitch_deg": pitch_deg,
                 "roll_deg": roll_deg,
+                "heading_deg": heading_deg,
+                "yaw_rate_deg_sec": yaw_rate_deg_sec,
+                "canopy_yaw_rel_deg": canopy_yaw_rel_deg,
                 "tuple22": t22,
                 "tuple24": t22 + [pitch_decideg, roll_decideg],
+                "tuple25": t22 + [pitch_decideg, roll_decideg, heading_decideg],
             }
         )
     return results
